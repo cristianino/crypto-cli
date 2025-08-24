@@ -36,7 +36,7 @@ crypto-cli/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/crypto-cli.git
+git clone https://github.com/cristianino/crypto-cli.git
 cd crypto-cli
 
 # Install dependencies
