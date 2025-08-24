@@ -66,6 +66,3 @@ Generate a random UUID:
 ## Contributing
 
 Pull requests are welcome! If you want to add new cryptographic commands, feel free to open an issue or PR.
-
-
-¿Quieres que te prepare el **siguiente comando** (por ejemplo `cipher` con AES) con la misma estructura, o prefieres primero que afinemos bien el `prng`?
