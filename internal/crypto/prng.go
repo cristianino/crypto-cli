@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func GeneratePRNG(t string, size int, encoding string) (string, error) {
+func GeneratePRNG(t string, size int, encoding string, min, max int64) (string, error) {
 	switch t {
 	case "bytes":
 		b := make([]byte, size)
@@ -28,6 +28,17 @@ func GeneratePRNG(t string, size int, encoding string) (string, error) {
 		}
 
 	case "int":
+		if min != 0 || max != 0 {
+			if max <= min {
+				return "", fmt.Errorf("max must be greater than min")
+			}
+			n, err := rand.Int(rand.Reader, big.NewInt(max-min+1))
+			if err != nil {
+				return "", fmt.Errorf("failed to generate random int: %w", err)
+			}
+			return fmt.Sprintf("%d", n.Int64()+min), nil
+		}
+
 		n, err := rand.Int(rand.Reader, big.NewInt(0).Lsh(big.NewInt(1), uint(size*8)))
 		if err != nil {
 			return "", fmt.Errorf("failed to generate random int: %w", err)

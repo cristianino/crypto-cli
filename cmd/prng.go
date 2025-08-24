@@ -13,6 +13,8 @@ var (
 	prngType     string
 	prngSize     int
 	prngEncoding string
+	prngMin      int64
+	prngMax      int64
 )
 
 // prngCmd represents the prng command
@@ -27,7 +29,7 @@ Examples:
   crypto-cli prng --type int --size 8
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := crypto.GeneratePRNG(prngType, prngSize, prngEncoding)
+		output, err := crypto.GeneratePRNG(prngType, prngSize, prngEncoding, prngMin, prngMax)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -41,4 +43,6 @@ func init() {
 	prngCmd.Flags().StringVarP(&prngType, "type", "t", "bytes", "Type of random value: bytes|int|uuid")
 	prngCmd.Flags().IntVarP(&prngSize, "size", "s", 16, "Size (for bytes or int)")
 	prngCmd.Flags().StringVarP(&prngEncoding, "encoding", "e", "hex", "Encoding for output: hex|base64")
+	prngCmd.Flags().Int64Var(&prngMin, "min", 0, "Minimum value (for int type)")
+	prngCmd.Flags().Int64Var(&prngMax, "max", 0, "Maximum value (for int type)")
 }
