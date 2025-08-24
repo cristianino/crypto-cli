@@ -63,6 +63,21 @@ Generate a random UUID:
 ./crypto-cli prng --type uuid
 ```
 
+Generate a random INT:
+```bash
+# Usa size en bits (ejemplo: 8 bytes = 64 bits)
+./crypto-cli prng --type int --size 8
+
+# Número entre 1 y 6
+./crypto-cli prng --type int --min 1 --max 6
+
+# Número entre 1000 y 9999
+./crypto-cli prng --type int --min 1000 --max 9999
+
+# Número entre 0 y 100 (por defecto si solo pones --type int)
+./crypto-cli prng --type int
+```
+
 ## Contributing
 
 Pull requests are welcome! If you want to add new cryptographic commands, feel free to open an issue or PR.
