@@ -65,16 +65,16 @@ Generate a random UUID:
 
 Generate a random INT:
 ```bash
-# Usa size en bits (ejemplo: 8 bytes = 64 bits)
+# Use size in bits (example: 8 bytes = 64 bits)
 ./crypto-cli prng --type int --size 8
 
-# Número entre 1 y 6
+# Number between 1 and 6
 ./crypto-cli prng --type int --min 1 --max 6
 
-# Número entre 1000 y 9999
+# Number between 1000 and 9999
 ./crypto-cli prng --type int --min 1000 --max 9999
 
-# Número entre 0 y 100 (por defecto si solo pones --type int)
+# Number between 0 and 100 (default if you only use --type int)
 ./crypto-cli prng --type int
 ```
 
