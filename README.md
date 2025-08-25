@@ -31,10 +31,17 @@ crypto-cli/
 │       ├── hash.go     # Hashing logic
 │       ├── cipher.go   # AES encryption/decryption logic
 │       └── ...         
+├── tests/              # Test suite (see TESTING.md)
+│   ├── unit/           # Unit tests
+│   ├── integration/    # Integration tests
+│   ├── testdata/       # Test data files
+│   └── run_tests.sh    # Test runner script
 ├── go.mod              # Go module definition
 ├── go.sum
 ├── main.go             # Main entry point
-└── README.md
+├── LICENSE             # MIT License
+├── README.md
+└── TESTING.md          # Testing documentation
 ````
 
 ## Installation
@@ -121,6 +128,39 @@ Encrypt and decrypt files:
 # Uses AES encryption in CBC mode with scrypt key derivation
 ```
 
+## Testing
+
+This project has comprehensive test coverage including unit tests, integration tests, and benchmarks.
+
+### Quick Testing
+
+```bash
+# Run all tests
+./tests/run_tests.sh all
+
+# Run only unit tests (fast)
+./tests/run_tests.sh unit
+
+# Run with coverage report
+./tests/run_tests.sh coverage
+
+# Run benchmarks
+./tests/run_tests.sh benchmarks
+```
+
+### Test Structure
+
+- **Unit Tests**: Fast tests for core cryptographic functions
+- **Integration Tests**: End-to-end CLI testing
+- **Test Data**: Shared test files for consistency
+- **Coverage**: 55.3% code coverage with HTML reports
+
+For detailed testing documentation, see [TESTING.md](TESTING.md).
+
 ## Contributing
 
 Pull requests are welcome! If you want to add new cryptographic commands, feel free to open an issue or PR.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
