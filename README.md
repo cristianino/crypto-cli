@@ -46,6 +46,8 @@ crypto-cli/
 
 ## Installation
 
+### Basic Installation (Local Build)
+
 ```bash
 # Clone the repository
 git clone https://github.com/cristianino/crypto-cli.git
@@ -61,49 +63,117 @@ go build -o crypto-cli
 ./crypto-cli --help
 ```
 
+### Install as System Command (Linux)
+
+To use `crypto-cli` as a global command from anywhere in your system:
+
+#### Option 1: Install to `/usr/local/bin` (Recommended)
+
+```bash
+# Clone and build
+git clone https://github.com/cristianino/crypto-cli.git
+cd crypto-cli
+go mod tidy
+go build -o crypto-cli
+
+# Install globally (requires sudo)
+sudo cp crypto-cli /usr/local/bin/
+
+# Verify installation
+crypto-cli --help
+```
+
+#### Option 2: Install to `~/.local/bin` (User-only)
+
+```bash
+# Create local bin directory if it doesn't exist
+mkdir -p ~/.local/bin
+
+# Clone and build
+git clone https://github.com/cristianino/crypto-cli.git
+cd crypto-cli
+go mod tidy
+go build -o crypto-cli
+
+# Install for current user
+cp crypto-cli ~/.local/bin/
+
+# Add to PATH if not already (add to ~/.bashrc or ~/.zshrc)
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+crypto-cli --help
+```
+
+#### Option 3: Direct Go Installation
+
+```bash
+# Install directly using go install
+go install github.com/cristianino/crypto-cli@latest
+
+# Verify installation (assuming $GOPATH/bin is in your PATH)
+crypto-cli --help
+```
+
+#### Uninstall
+
+```bash
+# If installed to /usr/local/bin
+sudo rm /usr/local/bin/crypto-cli
+
+# If installed to ~/.local/bin
+rm ~/.local/bin/crypto-cli
+
+# If installed with go install
+rm $(go env GOPATH)/bin/crypto-cli
+```
+
 ## Example Usage
+
+> **Note**: The examples below assume you have installed `crypto-cli` as a system command. If you're running it locally, use `./crypto-cli` instead of `crypto-cli`.
 
 Generate 16 random bytes encoded in base64:
 
 ```bash
-./crypto-cli prng --type bytes --size 16 --encoding base64
+crypto-cli prng --type bytes --size 16 --encoding base64
 ```
 
 Generate a random UUID:
 
 ```bash
-./crypto-cli prng --type uuid
+crypto-cli prng --type uuid
 ```
 
 Generate a random INT:
 ```bash
 # Use size in bits (example: 8 bytes = 64 bits)
-./crypto-cli prng --type int --size 8
+crypto-cli prng --type int --size 8
 
 # Number between 1 and 6
-./crypto-cli prng --type int --min 1 --max 6
+crypto-cli prng --type int --min 1 --max 6
 
 # Number between 1000 and 9999
-./crypto-cli prng --type int --min 1000 --max 9999
+crypto-cli prng --type int --min 1000 --max 9999
 
 # Number between 0 and 100 (default if you only use --type int)
-./crypto-cli prng --type int
+crypto-cli prng --type int
 ```
 
 Generate hash of a file:
 
 ```bash
 # Generate SHA256 hash of a file in hexadecimal format
-./crypto-cli hash --algorithm sha256 --encoding hex --file example.txt
+crypto-cli hash --algorithm sha256 --encoding hex --file example.txt
 
 # Generate SHA512 hash of a file in base64 format
-./crypto-cli hash --algorithm sha512 --encoding base64 --file example.txt
+crypto-cli hash --algorithm sha512 --encoding base64 --file example.txt
 
 # Generate SHA1 hash (hexadecimal is default encoding)
-./crypto-cli hash --algorithm sha1 --file example.txt
+crypto-cli hash --algorithm sha1 --file example.txt
 
 # Hash from stdin
-cat file.txt | ./crypto-cli hash --algorithm sha256
+cat file.txt | crypto-cli hash --algorithm sha256
 
 # Supported algorithms: sha256, sha512, sha1
 # Supported encodings: hex, base64
@@ -113,16 +183,16 @@ Encrypt and decrypt files:
 
 ```bash
 # Encrypt a file with AES-256-CBC
-./crypto-cli cipher --password mypassword --salt mysalt --size 256 --input data.txt --output encrypted.bin
+crypto-cli cipher --password mypassword --salt mysalt --size 256 --input data.txt --output encrypted.bin
 
 # Encrypt with shorter flags (AES-128-CBC)
-./crypto-cli cipher -p mypassword -s mysalt -z 128 -i image.png -o encrypted_image.bin
+crypto-cli cipher -p mypassword -s mysalt -z 128 -i image.png -o encrypted_image.bin
 
 # Decrypt the file
-./crypto-cli decipher --password mypassword --salt mysalt --size 256 --input encrypted.bin --output decrypted.txt
+crypto-cli decipher --password mypassword --salt mysalt --size 256 --input encrypted.bin --output decrypted.txt
 
 # Decrypt with shorter flags
-./crypto-cli decipher -p mypassword -s mysalt -z 128 -i encrypted_image.bin -o image.png
+crypto-cli decipher -p mypassword -s mysalt -z 128 -i encrypted_image.bin -o image.png
 
 # Supported key sizes: 128, 192, 256 bits
 # Uses AES encryption in CBC mode with scrypt key derivation
