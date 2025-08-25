@@ -8,7 +8,7 @@ This project is a Golang reimplementation of [curso-criptografia](https://github
 - **✅ Random generation (PRNG)**: bytes, integers, UUIDs
 - **✅ Ciphers**: encrypt and decrypt with AES (CBC mode)
 - **✅ Hashing**: SHA-1, SHA-2, SHA-3
-- **HMAC**: keyed message authentication codes *(planned)*
+- **✅ HMAC**: keyed message authentication codes
 - **Diffie-Hellman**: key exchange *(planned)*
 - **Key pairs**: generation and serialization *(planned)*
 - **Digital signatures**: sign and verify *(planned)*
@@ -176,6 +176,28 @@ crypto-cli hash --algorithm sha1 --file example.txt
 cat file.txt | crypto-cli hash --algorithm sha256
 
 # Supported algorithms: sha256, sha512, sha1
+# Supported encodings: hex, base64
+```
+
+Generate HMAC for message authentication:
+
+```bash
+# Generate HMAC-SHA256 of a file with a secret key
+crypto-cli hmac --algorithm sha256 --key mysecret --encoding hex --file example.txt
+
+# Generate HMAC-SHA512 with base64 encoding
+crypto-cli hmac --algorithm sha512 --key mysecret --encoding base64 --file example.txt
+
+# Generate HMAC-SHA256 (hex is default encoding)
+crypto-cli hmac --algorithm sha256 --key mysecret --file example.txt
+
+# Generate HMAC from stdin
+cat file.txt | crypto-cli hmac --algorithm sha256 --key mysecret
+
+# Using shorter flags
+crypto-cli hmac -a sha512 -k mysecret -e base64 -f data.txt
+
+# Supported algorithms: sha256, sha512, sha1, sha3-256, sha3-512
 # Supported encodings: hex, base64
 ```
 

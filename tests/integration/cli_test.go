@@ -367,3 +367,218 @@ func getBinaryPath(t *testing.T) string {
 
 	return "./crypto-cli"
 }
+
+// TestCLIHMACE2E tests HMAC generation via CLI
+func TestCLIHMACE2E(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	tempDir, err := os.MkdirTemp("", "hmac_e2e_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Test data
+	testData := "HMAC test data for CLI integration!"
+	inputFile := filepath.Join(tempDir, "input.txt")
+	if err := os.WriteFile(inputFile, []byte(testData), 0644); err != nil {
+		t.Fatalf("Failed to create input file: %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		algorithm string
+		key       string
+		encoding  string
+		expected  string // We'll validate format instead of exact value
+	}{
+		{"SHA256-Hex", "sha256", "testkey", "hex", "hex"},
+		{"SHA512-Base64", "sha512", "testkey", "base64", "base64"},
+		{"SHA1-Hex", "sha1", "testkey", "hex", "hex"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := exec.Command(binaryPath, "hmac",
+				"--algorithm", test.algorithm,
+				"--key", test.key,
+				"--encoding", test.encoding,
+				"--file", inputFile,
+			)
+
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("HMAC command failed: %v, output: %s", err, string(output))
+			}
+
+			result := strings.TrimSpace(string(output))
+
+			// Validate output format
+			if result == "" {
+				t.Errorf("HMAC output is empty")
+			}
+
+			switch test.expected {
+			case "hex":
+				if len(result)%2 != 0 {
+					t.Errorf("Hex output should have even length, got %d", len(result))
+				}
+				// Check if it's valid hex (basic check)
+				for _, c := range result {
+					if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+						t.Errorf("Invalid hex character: %c", c)
+						break
+					}
+				}
+			case "base64":
+				// Basic base64 validation (should not be empty and have reasonable length)
+				if len(result) == 0 {
+					t.Errorf("Base64 output should not be empty")
+				}
+			}
+
+			// Test consistency - same command should produce same result
+			cmd2 := exec.Command(binaryPath, "hmac",
+				"--algorithm", test.algorithm,
+				"--key", test.key,
+				"--encoding", test.encoding,
+				"--file", inputFile,
+			)
+			output2, err := cmd2.CombinedOutput()
+			if err != nil {
+				t.Fatalf("Second HMAC command failed: %v", err)
+			}
+			result2 := strings.TrimSpace(string(output2))
+
+			if result != result2 {
+				t.Errorf("HMAC results should be consistent: %s != %s", result, result2)
+			}
+		})
+	}
+}
+
+// TestCLIHMACStdin tests HMAC generation from stdin
+func TestCLIHMACStdin(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	testData := "HMAC stdin test data!"
+
+	cmd := exec.Command(binaryPath, "hmac",
+		"--algorithm", "sha256",
+		"--key", "stdinkey",
+		"--encoding", "hex",
+	)
+	cmd.Stdin = strings.NewReader(testData)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("HMAC stdin command failed: %v, output: %s", err, string(output))
+	}
+
+	result := strings.TrimSpace(string(output))
+
+	// Validate result
+	if result == "" {
+		t.Errorf("HMAC output is empty")
+	}
+
+	if len(result)%2 != 0 {
+		t.Errorf("Hex output should have even length, got %d", len(result))
+	}
+}
+
+// TestCLIHMACShortFlags tests HMAC with short flags
+func TestCLIHMACShortFlags(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	tempDir, err := os.MkdirTemp("", "hmac_short_flags_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	testData := "Short flags test!"
+	inputFile := filepath.Join(tempDir, "input.txt")
+	if err := os.WriteFile(inputFile, []byte(testData), 0644); err != nil {
+		t.Fatalf("Failed to create input file: %v", err)
+	}
+
+	cmd := exec.Command(binaryPath, "hmac",
+		"-a", "sha512",
+		"-k", "shortkey",
+		"-e", "base64",
+		"-f", inputFile,
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("HMAC short flags command failed: %v, output: %s", err, string(output))
+	}
+
+	result := strings.TrimSpace(string(output))
+	if result == "" {
+		t.Errorf("HMAC output is empty")
+	}
+}
+
+// TestCLIHMACErrors tests HMAC error cases
+func TestCLIHMACErrors(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	// Create a temp file for testing
+	tempDir, err := os.MkdirTemp("", "hmac_error_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	testFile := filepath.Join(tempDir, "test.txt")
+	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		args     []string
+		expected string
+	}{
+		{
+			"Missing Key",
+			[]string{"hmac", "--algorithm", "sha256", "--file", testFile},
+			"required flag(s) \"key\" not set",
+		},
+		{
+			"Invalid Algorithm",
+			[]string{"hmac", "--algorithm", "invalid", "--key", "test", "--file", testFile},
+			"unsupported algorithm: invalid",
+		},
+		{
+			"Invalid Encoding",
+			[]string{"hmac", "--algorithm", "sha256", "--key", "test", "--encoding", "invalid", "--file", testFile},
+			"unsupported encoding: invalid",
+		},
+		{
+			"Nonexistent File",
+			[]string{"hmac", "--algorithm", "sha256", "--key", "test", "--file", "nonexistent.txt"},
+			"failed to read input",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := exec.Command(binaryPath, test.args...)
+			output, err := cmd.CombinedOutput()
+
+			// We expect these to fail
+			if err == nil {
+				t.Errorf("Expected command to fail, but it succeeded with output: %s", string(output))
+				return
+			}
+
+			outputStr := string(output)
+			if !strings.Contains(outputStr, test.expected) {
+				t.Errorf("Expected error message to contain '%s', got: %s", test.expected, outputStr)
+			}
+		})
+	}
+}
