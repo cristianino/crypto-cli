@@ -78,6 +78,22 @@ Generate a random INT:
 ./crypto-cli prng --type int
 ```
 
+Generate hash of a file:
+
+```bash
+# Generate SHA256 hash of a file in hexadecimal format
+./crypto-cli hash --algorithm sha256 --encoding hex --file example.txt
+
+# Generate SHA512 hash of a file in base64 format
+./crypto-cli hash --algorithm sha512 --encoding base64 --file example.txt
+
+# Generate SHA1 hash (hexadecimal is default encoding)
+./crypto-cli hash --algorithm sha1 --file example.txt
+
+# Supported algorithms: sha256, sha512, sha1
+# Supported encodings: hex, base64
+```
+
 ## Contributing
 
 Pull requests are welcome! If you want to add new cryptographic commands, feel free to open an issue or PR.
