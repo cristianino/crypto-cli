@@ -7,15 +7,26 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 
 	"golang.org/x/crypto/sha3"
 )
 
 func GenerateHash(algorithm, encoding, filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
+	var data []byte
+	var err error
+
+	if filePath == "" {
+		// Read from stdin
+		data, err = io.ReadAll(os.Stdin)
+	} else {
+		// Read from file
+		data, err = os.ReadFile(filePath)
+	}
+
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("failed to read input: %w", err)
 	}
 
 	var hash []byte
