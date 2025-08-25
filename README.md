@@ -3,16 +3,16 @@
 A command-line interface (CLI) tool written in Go for learning and practicing modern cryptography.  
 This project is a Golang reimplementation of [curso-criptografia](https://github.com/cristianino/curso-criptografia), originally built in Node.js.
 
-## Features (planned)
+## Features
 
-- **Random generation (PRNG)**: bytes, integers, UUIDs
-- **Ciphers**: encrypt and decrypt with modern algorithms (AES, ChaCha20, etc.)
-- **Hashing**: SHA-2, SHA-3, etc.
-- **HMAC**: keyed message authentication codes
-- **Diffie-Hellman**: key exchange
-- **Key pairs**: generation and serialization
-- **Digital signatures**: sign and verify
-- **Key derivation**: KDFs like scrypt and PBKDF2
+- **✅ Random generation (PRNG)**: bytes, integers, UUIDs
+- **✅ Ciphers**: encrypt and decrypt with AES (CBC mode)
+- **✅ Hashing**: SHA-1, SHA-2, SHA-3
+- **HMAC**: keyed message authentication codes *(planned)*
+- **Diffie-Hellman**: key exchange *(planned)*
+- **Key pairs**: generation and serialization *(planned)*
+- **Digital signatures**: sign and verify *(planned)*
+- **Key derivation**: KDFs like scrypt and PBKDF2 *(planned)*
 
 ## Project Structure
 
@@ -21,10 +21,15 @@ crypto-cli/
 ├── cmd/                # Cobra commands
 │   ├── root.go         # Root command (entry point)
 │   ├── prng.go         # "prng" command
-│   └── ...             # other commands (cipher, hash, dh, etc.)
+│   ├── hash.go         # "hash" command
+│   ├── cipher.go       # "cipher" command (encrypt)
+│   ├── decipher.go     # "decipher" command (decrypt)
+│   └── ...             # other commands (hmac, dh, etc.)
 ├── internal/           # Internal packages (not exported outside the module)
 │   └── crypto/         # Cryptographic implementations
 │       ├── prng.go     # PRNG logic
+│       ├── hash.go     # Hashing logic
+│       ├── cipher.go   # AES encryption/decryption logic
 │       └── ...         
 ├── go.mod              # Go module definition
 ├── go.sum
@@ -90,8 +95,30 @@ Generate hash of a file:
 # Generate SHA1 hash (hexadecimal is default encoding)
 ./crypto-cli hash --algorithm sha1 --file example.txt
 
+# Hash from stdin
+cat file.txt | ./crypto-cli hash --algorithm sha256
+
 # Supported algorithms: sha256, sha512, sha1
 # Supported encodings: hex, base64
+```
+
+Encrypt and decrypt files:
+
+```bash
+# Encrypt a file with AES-256-CBC
+./crypto-cli cipher --password mypassword --salt mysalt --size 256 --input data.txt --output encrypted.bin
+
+# Encrypt with shorter flags (AES-128-CBC)
+./crypto-cli cipher -p mypassword -s mysalt -z 128 -i image.png -o encrypted_image.bin
+
+# Decrypt the file
+./crypto-cli decipher --password mypassword --salt mysalt --size 256 --input encrypted.bin --output decrypted.txt
+
+# Decrypt with shorter flags
+./crypto-cli decipher -p mypassword -s mysalt -z 128 -i encrypted_image.bin -o image.png
+
+# Supported key sizes: 128, 192, 256 bits
+# Uses AES encryption in CBC mode with scrypt key derivation
 ```
 
 ## Contributing
