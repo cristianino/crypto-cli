@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/cristianino/crypto-cli/internal/crypto"
@@ -561,5 +562,190 @@ func BenchmarkGenerateHMAC(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+// TestGenerateDiffieHellmanKeys tests DH key generation
+func TestGenerateDiffieHellmanKeys(t *testing.T) {
+	encodings := []string{"hex", "base64"}
+
+	for _, encoding := range encodings {
+		t.Run(fmt.Sprintf("Encoding_%s", encoding), func(t *testing.T) {
+			result, err := crypto.GenerateDiffieHellmanKeys(encoding)
+			if err != nil {
+				t.Fatalf("GenerateDiffieHellmanKeys failed: %v", err)
+			}
+
+			// Verify all fields are present and not empty
+			if result.Prime == "" {
+				t.Errorf("Prime is empty")
+			}
+			if result.Generator == "" {
+				t.Errorf("Generator is empty")
+			}
+			if result.PublicKey == "" {
+				t.Errorf("PublicKey is empty")
+			}
+			if result.PrivateKey == "" {
+				t.Errorf("PrivateKey is empty")
+			}
+
+			// Secret should not be present in key generation
+			if result.Secret != "" {
+				t.Errorf("Secret should be empty in key generation, got: %s", result.Secret)
+			}
+
+			// Test consistency - generating keys twice should produce different results
+			result2, err := crypto.GenerateDiffieHellmanKeys(encoding)
+			if err != nil {
+				t.Fatalf("Second GenerateDiffieHellmanKeys failed: %v", err)
+			}
+
+			// Prime and generator should be the same (using same modp group)
+			if result.Prime != result2.Prime {
+				t.Errorf("Prime should be consistent across generations")
+			}
+			if result.Generator != result2.Generator {
+				t.Errorf("Generator should be consistent across generations")
+			}
+
+			// Private and public keys should be different
+			if result.PrivateKey == result2.PrivateKey {
+				t.Errorf("Private keys should be different")
+			}
+			if result.PublicKey == result2.PublicKey {
+				t.Errorf("Public keys should be different")
+			}
+		})
+	}
+}
+
+// TestComputeDiffieHellmanSecret tests DH shared secret computation
+func TestComputeDiffieHellmanSecret(t *testing.T) {
+	encoding := "hex"
+
+	// Generate keys for Alice
+	aliceKeys, err := crypto.GenerateDiffieHellmanKeys(encoding)
+	if err != nil {
+		t.Fatalf("Failed to generate Alice's keys: %v", err)
+	}
+
+	// Generate keys for Bob
+	bobKeys, err := crypto.GenerateDiffieHellmanKeys(encoding)
+	if err != nil {
+		t.Fatalf("Failed to generate Bob's keys: %v", err)
+	}
+
+	// Alice computes shared secret using Bob's public key
+	aliceParams := crypto.DiffieHellmanParams{
+		Prime:                  aliceKeys.Prime,
+		PrimeEncoding:          encoding,
+		Generator:              aliceKeys.Generator,
+		GeneratorEncoding:      encoding,
+		PrivateKey:             aliceKeys.PrivateKey,
+		PrivateKeyEncoding:     encoding,
+		OtherPublicKey:         bobKeys.PublicKey,
+		OtherPublicKeyEncoding: encoding,
+	}
+
+	aliceResult, err := crypto.ComputeDiffieHellmanSecret(aliceParams, encoding)
+	if err != nil {
+		t.Fatalf("Alice failed to compute shared secret: %v", err)
+	}
+
+	// Bob computes shared secret using Alice's public key
+	bobParams := crypto.DiffieHellmanParams{
+		Prime:                  bobKeys.Prime,
+		PrimeEncoding:          encoding,
+		Generator:              bobKeys.Generator,
+		GeneratorEncoding:      encoding,
+		PrivateKey:             bobKeys.PrivateKey,
+		PrivateKeyEncoding:     encoding,
+		OtherPublicKey:         aliceKeys.PublicKey,
+		OtherPublicKeyEncoding: encoding,
+	}
+
+	bobResult, err := crypto.ComputeDiffieHellmanSecret(bobParams, encoding)
+	if err != nil {
+		t.Fatalf("Bob failed to compute shared secret: %v", err)
+	}
+
+	// Both should compute the same shared secret
+	if aliceResult.Secret != bobResult.Secret {
+		t.Errorf("Shared secrets don't match:\nAlice: %s\nBob: %s", aliceResult.Secret, bobResult.Secret)
+	}
+
+	// Verify secret is not empty
+	if aliceResult.Secret == "" {
+		t.Errorf("Shared secret is empty")
+	}
+}
+
+// TestDiffieHellmanErrors tests error cases
+func TestDiffieHellmanErrors(t *testing.T) {
+	// Test invalid encoding for key generation
+	_, err := crypto.GenerateDiffieHellmanKeys("invalid")
+	if err == nil || !strings.Contains(fmt.Sprintf("%v", err), "unsupported encoding") {
+		t.Errorf("Expected unsupported encoding error, got: %v", err)
+	}
+
+	// Test invalid params for secret computation
+	params := crypto.DiffieHellmanParams{
+		Prime:                  "invalid",
+		PrimeEncoding:          "hex",
+		Generator:              "2",
+		GeneratorEncoding:      "hex",
+		PrivateKey:             "123",
+		PrivateKeyEncoding:     "hex",
+		OtherPublicKey:         "456",
+		OtherPublicKeyEncoding: "hex",
+	}
+
+	_, err = crypto.ComputeDiffieHellmanSecret(params, "hex")
+	if err == nil {
+		t.Errorf("Expected error with invalid prime")
+	}
+}
+
+// BenchmarkGenerateDiffieHellmanKeys benchmarks DH key generation
+func BenchmarkGenerateDiffieHellmanKeys(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := crypto.GenerateDiffieHellmanKeys("hex")
+		if err != nil {
+			b.Fatalf("Key generation failed: %v", err)
+		}
+	}
+}
+
+// BenchmarkComputeDiffieHellmanSecret benchmarks DH secret computation
+func BenchmarkComputeDiffieHellmanSecret(b *testing.B) {
+	// Setup: generate keys once
+	aliceKeys, err := crypto.GenerateDiffieHellmanKeys("hex")
+	if err != nil {
+		b.Fatalf("Failed to generate Alice's keys: %v", err)
+	}
+
+	bobKeys, err := crypto.GenerateDiffieHellmanKeys("hex")
+	if err != nil {
+		b.Fatalf("Failed to generate Bob's keys: %v", err)
+	}
+
+	params := crypto.DiffieHellmanParams{
+		Prime:                  aliceKeys.Prime,
+		PrimeEncoding:          "hex",
+		Generator:              aliceKeys.Generator,
+		GeneratorEncoding:      "hex",
+		PrivateKey:             aliceKeys.PrivateKey,
+		PrivateKeyEncoding:     "hex",
+		OtherPublicKey:         bobKeys.PublicKey,
+		OtherPublicKeyEncoding: "hex",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := crypto.ComputeDiffieHellmanSecret(params, "hex")
+		if err != nil {
+			b.Fatalf("Secret computation failed: %v", err)
+		}
 	}
 }

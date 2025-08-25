@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -561,6 +562,237 @@ func TestCLIHMACErrors(t *testing.T) {
 			"Nonexistent File",
 			[]string{"hmac", "--algorithm", "sha256", "--key", "test", "--file", "nonexistent.txt"},
 			"failed to read input",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := exec.Command(binaryPath, test.args...)
+			output, err := cmd.CombinedOutput()
+
+			// We expect these to fail
+			if err == nil {
+				t.Errorf("Expected command to fail, but it succeeded with output: %s", string(output))
+				return
+			}
+
+			outputStr := string(output)
+			if !strings.Contains(outputStr, test.expected) {
+				t.Errorf("Expected error message to contain '%s', got: %s", test.expected, outputStr)
+			}
+		})
+	}
+}
+
+// TestCLIDiffieHellmanE2E tests Diffie-Hellman key exchange via CLI
+func TestCLIDiffieHellmanE2E(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	tempDir, err := os.MkdirTemp("", "dh_e2e_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Test key generation
+	t.Run("KeyGeneration", func(t *testing.T) {
+		encodings := []string{"hex", "base64"}
+
+		for _, encoding := range encodings {
+			t.Run("Encoding_"+encoding, func(t *testing.T) {
+				cmd := exec.Command(binaryPath, "dh",
+					"--mode", "generate",
+					"--encoding", encoding,
+				)
+
+				output, err := cmd.CombinedOutput()
+				if err != nil {
+					t.Fatalf("DH key generation failed: %v, output: %s", err, string(output))
+				}
+
+				// Verify JSON structure
+				var result map[string]interface{}
+				if err := json.Unmarshal(output, &result); err != nil {
+					t.Fatalf("Failed to parse JSON output: %v", err)
+				}
+
+				// Check required fields
+				requiredFields := []string{"prime", "generator", "publicKey", "privateKey"}
+				for _, field := range requiredFields {
+					if _, exists := result[field]; !exists {
+						t.Errorf("Missing field: %s", field)
+					}
+					if result[field] == "" {
+						t.Errorf("Empty field: %s", field)
+					}
+				}
+
+				// Secret should not be present in generation
+				if secret, exists := result["secret"]; exists && secret != "" {
+					t.Errorf("Secret should not be present in key generation")
+				}
+			})
+		}
+	})
+
+	// Test complete key exchange
+	t.Run("KeyExchange", func(t *testing.T) {
+		// Generate Alice's keys
+		aliceCmd := exec.Command(binaryPath, "dh", "--mode", "generate", "--encoding", "hex")
+		aliceOutput, err := aliceCmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("Failed to generate Alice's keys: %v", err)
+		}
+
+		var aliceKeys map[string]string
+		if err := json.Unmarshal(aliceOutput, &aliceKeys); err != nil {
+			t.Fatalf("Failed to parse Alice's keys: %v", err)
+		}
+
+		// Generate Bob's keys
+		bobCmd := exec.Command(binaryPath, "dh", "--mode", "generate", "--encoding", "hex")
+		bobOutput, err := bobCmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("Failed to generate Bob's keys: %v", err)
+		}
+
+		var bobKeys map[string]string
+		if err := json.Unmarshal(bobOutput, &bobKeys); err != nil {
+			t.Fatalf("Failed to parse Bob's keys: %v", err)
+		}
+
+		// Alice computes shared secret
+		aliceSecretCmd := exec.Command(binaryPath, "dh",
+			"--mode", "compute",
+			"--prime", aliceKeys["prime"],
+			"--generator", aliceKeys["generator"],
+			"--private-key", aliceKeys["privateKey"],
+			"--other-public-key", bobKeys["publicKey"],
+			"--encoding", "hex",
+		)
+
+		aliceSecretOutput, err := aliceSecretCmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("Alice failed to compute secret: %v, output: %s", err, string(aliceSecretOutput))
+		}
+
+		var aliceResult map[string]string
+		if err := json.Unmarshal(aliceSecretOutput, &aliceResult); err != nil {
+			t.Fatalf("Failed to parse Alice's secret result: %v", err)
+		}
+
+		// Bob computes shared secret
+		bobSecretCmd := exec.Command(binaryPath, "dh",
+			"--mode", "compute",
+			"--prime", bobKeys["prime"],
+			"--generator", bobKeys["generator"],
+			"--private-key", bobKeys["privateKey"],
+			"--other-public-key", aliceKeys["publicKey"],
+			"--encoding", "hex",
+		)
+
+		bobSecretOutput, err := bobSecretCmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("Bob failed to compute secret: %v, output: %s", err, string(bobSecretOutput))
+		}
+
+		var bobResult map[string]string
+		if err := json.Unmarshal(bobSecretOutput, &bobResult); err != nil {
+			t.Fatalf("Failed to parse Bob's secret result: %v", err)
+		}
+
+		// Both should compute the same shared secret
+		if aliceResult["secret"] != bobResult["secret"] {
+			t.Errorf("Shared secrets don't match:\nAlice: %s\nBob: %s",
+				aliceResult["secret"], bobResult["secret"])
+		}
+
+		// Verify secret is not empty
+		if aliceResult["secret"] == "" {
+			t.Errorf("Alice's shared secret is empty")
+		}
+		if bobResult["secret"] == "" {
+			t.Errorf("Bob's shared secret is empty")
+		}
+	})
+}
+
+// TestCLIDiffieHellmanOutputFile tests saving DH results to file
+func TestCLIDiffieHellmanOutputFile(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	tempDir, err := os.MkdirTemp("", "dh_file_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	outputFile := filepath.Join(tempDir, "keys.json")
+
+	cmd := exec.Command(binaryPath, "dh",
+		"--mode", "generate",
+		"--encoding", "base64",
+		"--output", outputFile,
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("DH file output failed: %v, output: %s", err, string(output))
+	}
+
+	// Verify success message
+	if !strings.Contains(string(output), "Diffie-Hellman keys saved to:") {
+		t.Errorf("Expected success message in output: %s", string(output))
+	}
+
+	// Verify file exists and has valid JSON
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("Failed to read output file: %v", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("Invalid JSON in output file: %v", err)
+	}
+
+	// Check required fields
+	requiredFields := []string{"prime", "generator", "publicKey", "privateKey"}
+	for _, field := range requiredFields {
+		if _, exists := result[field]; !exists {
+			t.Errorf("Missing field in file: %s", field)
+		}
+	}
+}
+
+// TestCLIDiffieHellmanErrors tests DH error cases
+func TestCLIDiffieHellmanErrors(t *testing.T) {
+	binaryPath := getBinaryPath(t)
+
+	tests := []struct {
+		name     string
+		args     []string
+		expected string
+	}{
+		{
+			"Invalid Mode",
+			[]string{"dh", "--mode", "invalid"},
+			"Invalid mode: invalid",
+		},
+		{
+			"Missing Prime in Compute",
+			[]string{"dh", "--mode", "compute", "--generator", "2", "--private-key", "123", "--other-public-key", "456"},
+			"--prime is required for compute mode",
+		},
+		{
+			"Missing Generator in Compute",
+			[]string{"dh", "--mode", "compute", "--prime", "123", "--private-key", "123", "--other-public-key", "456"},
+			"--generator is required for compute mode",
+		},
+		{
+			"Invalid Encoding",
+			[]string{"dh", "--mode", "generate", "--encoding", "invalid"},
+			"unsupported encoding: invalid",
 		},
 	}
 

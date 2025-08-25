@@ -9,7 +9,7 @@ This project is a Golang reimplementation of [curso-criptografia](https://github
 - **✅ Ciphers**: encrypt and decrypt with AES (CBC mode)
 - **✅ Hashing**: SHA-1, SHA-2, SHA-3
 - **✅ HMAC**: keyed message authentication codes
-- **Diffie-Hellman**: key exchange *(planned)*
+- **✅ Diffie-Hellman**: key exchange
 - **Key pairs**: generation and serialization *(planned)*
 - **Digital signatures**: sign and verify *(planned)*
 - **Key derivation**: KDFs like scrypt and PBKDF2 *(planned)*
@@ -24,12 +24,16 @@ crypto-cli/
 │   ├── hash.go         # "hash" command
 │   ├── cipher.go       # "cipher" command (encrypt)
 │   ├── decipher.go     # "decipher" command (decrypt)
-│   └── ...             # other commands (hmac, dh, etc.)
+│   ├── hmac.go         # "hmac" command
+│   ├── dh.go           # "dh" command (Diffie-Hellman)
+│   └── ...             # other commands (signatures, etc.)
 ├── internal/           # Internal packages (not exported outside the module)
 │   └── crypto/         # Cryptographic implementations
 │       ├── prng.go     # PRNG logic
 │       ├── hash.go     # Hashing logic
 │       ├── cipher.go   # AES encryption/decryption logic
+│       ├── hmac.go     # HMAC logic
+│       ├── dh.go       # Diffie-Hellman logic
 │       └── ...         
 ├── tests/              # Test suite (see TESTING.md)
 │   ├── unit/           # Unit tests
@@ -198,6 +202,35 @@ cat file.txt | crypto-cli hmac --algorithm sha256 --key mysecret
 crypto-cli hmac -a sha512 -k mysecret -e base64 -f data.txt
 
 # Supported algorithms: sha256, sha512, sha1, sha3-256, sha3-512
+# Supported encodings: hex, base64
+```
+
+Diffie-Hellman key exchange:
+
+```bash
+# Generate new key pair
+crypto-cli dh --mode generate --encoding hex
+
+# Generate key pair with base64 encoding and save to file
+crypto-cli dh --mode generate --encoding base64 --output alice_keys.json
+
+# Compute shared secret (Alice computes secret using Bob's public key)
+crypto-cli dh --mode compute \
+  --prime <prime-from-keygen> --prime-encoding hex \
+  --generator <generator-from-keygen> --generator-encoding hex \
+  --private-key <alice-private-key> --private-key-encoding hex \
+  --other-public-key <bob-public-key> --other-public-key-encoding hex \
+  --encoding hex
+
+# Using shorter flags
+crypto-cli dh -m compute \
+  --prime <prime> \
+  --generator <generator> \
+  --private-key <your-private-key> \
+  --other-public-key <their-public-key> \
+  -e base64
+
+# Both parties should get the same shared secret!
 # Supported encodings: hex, base64
 ```
 
