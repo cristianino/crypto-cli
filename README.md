@@ -12,7 +12,7 @@ This project is a Golang reimplementation of [curso-criptografia](https://github
 - **✅ Diffie-Hellman**: key exchange
 - **✅ Key pairs**: RSA and RSA-PSS key pair generation and serialization
 - **✅ Digital signatures**: RSA sign and verify with SHA-256/SHA-512
-- **Key derivation**: KDFs like scrypt and PBKDF2 *(planned)*
+- **✅ Key derivation**: KDFs like scrypt and PBKDF2
 
 ## Project Structure
 
