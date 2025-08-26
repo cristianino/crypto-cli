@@ -11,7 +11,7 @@ This project is a Golang reimplementation of [curso-criptografia](https://github
 - **✅ HMAC**: keyed message authentication codes
 - **✅ Diffie-Hellman**: key exchange
 - **✅ Key pairs**: RSA and RSA-PSS key pair generation and serialization
-- **Digital signatures**: sign and verify *(planned)*
+- **✅ Digital signatures**: RSA sign and verify with SHA-256/SHA-512
 - **Key derivation**: KDFs like scrypt and PBKDF2 *(planned)*
 
 ## Project Structure
@@ -27,7 +27,9 @@ crypto-cli/
 │   ├── hmac.go         # "hmac" command
 │   ├── dh.go           # "dh" command (Diffie-Hellman)
 │   ├── keypair.go      # "keypair" command (RSA key pairs)
-│   └── ...             # other commands (signatures, etc.)
+│   ├── sign.go         # "sign" command (digital signatures)
+│   ├── verify.go       # "verify" command (signature verification)
+│   └── ...             # other commands
 ├── internal/           # Internal packages (not exported outside the module)
 │   └── crypto/         # Cryptographic implementations
 │       ├── prng.go     # PRNG logic
@@ -36,6 +38,7 @@ crypto-cli/
 │       ├── hmac.go     # HMAC logic
 │       ├── dh.go       # Diffie-Hellman logic
 │       ├── keypair.go  # RSA key pair generation logic
+│       ├── signature.go # Digital signature logic
 │       └── ...         
 ├── tests/              # Test suite (see TESTING.md)
 │   ├── unit/           # Unit tests
@@ -280,6 +283,41 @@ crypto-cli keypair -t rsa -m 4096 -f pem -p mypassword -a 256 -o ./keys
 # Supported modulus lengths: 2048, 3072, 4096 bits
 # Supported formats: pem, der
 # Supported AES sizes for encryption: 128, 192, 256 bits
+```
+
+Create and verify digital signatures:
+
+```bash
+# Sign a file with RSA-SHA256
+crypto-cli sign --algorithm RSA-SHA256 --input document.txt --private-key private.pem --output signature.bin
+
+# Sign with passphrase-protected private key
+crypto-cli sign --algorithm RSA-SHA256 --input document.txt --private-key private.pem --passphrase secret123 --output signature.bin
+
+# Sign and output as base64 to stdout
+crypto-cli sign --algorithm RSA-SHA256 --input document.txt --private-key private.pem --encoding base64
+
+# Sign using RSA-PSS with SHA-512
+crypto-cli sign --algorithm RSA-PSS-SHA512 --input document.txt --private-key private.pem --output signature.bin
+
+# Sign from stdin
+cat document.txt | crypto-cli sign --algorithm RSA-SHA256 --private-key private.pem --encoding hex
+
+# Verify a signature
+crypto-cli verify --algorithm RSA-SHA256 --input document.txt --public-key public.pem --signature signature.bin
+
+# Verify with base64 signature text
+crypto-cli verify --algorithm RSA-SHA256 --input document.txt --public-key public.pem --signature-text <base64-signature> --encoding base64
+
+# Verify from stdin
+cat document.txt | crypto-cli verify --algorithm RSA-SHA256 --public-key public.pem --signature signature.bin
+
+# Using shorter flags
+crypto-cli sign -a RSA-SHA256 -i document.txt -k private.pem -o signature.bin
+crypto-cli verify -a RSA-SHA256 -i document.txt -k public.pem -s signature.bin
+
+# Supported algorithms: RSA-SHA256, RSA-SHA512, RSA-PSS-SHA256, RSA-PSS-SHA512
+# Supported encodings: hex, base64
 ```
 
 ## Testing

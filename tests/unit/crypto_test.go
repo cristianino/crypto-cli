@@ -950,3 +950,305 @@ func BenchmarkGenerateKeyPair(b *testing.B) {
 		}
 	}
 }
+
+// TestSignAndVerify tests digital signature functionality
+func TestSignAndVerify(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "signature_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Generate a key pair for testing
+	keyPairOpts := crypto.KeyPairOptions{
+		Type:          crypto.RSA,
+		ModulusLength: 2048,
+		Passphrase:    "",
+		Format:        crypto.PEM,
+		AESKeySize:    256,
+	}
+
+	keyPair, err := crypto.GenerateKeyPair(keyPairOpts)
+	if err != nil {
+		t.Fatalf("Failed to generate key pair: %v", err)
+	}
+
+	// Save key pair to files
+	err = crypto.SaveKeyPairToFiles(keyPair, tempDir, crypto.PEM)
+	if err != nil {
+		t.Fatalf("Failed to save key pair: %v", err)
+	}
+
+	privateKeyPath := filepath.Join(tempDir, "private.pem")
+	publicKeyPath := filepath.Join(tempDir, "public.pem")
+
+	// Test data
+	testData := []byte("This is a test message for digital signature!")
+
+	tests := []struct {
+		name      string
+		algorithm crypto.SignatureAlgorithm
+	}{
+		{"RSA-SHA256", crypto.RSASHA256},
+		{"RSA-SHA512", crypto.RSASHA512},
+		{"RSA-PSS-SHA256", crypto.RSAPSS256},
+		{"RSA-PSS-SHA512", crypto.RSAPSS512},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Sign the data
+			signOpts := crypto.SignOptions{
+				Algorithm:      tt.algorithm,
+				PrivateKeyFile: privateKeyPath,
+				Passphrase:     "",
+			}
+
+			signature, err := crypto.SignData(testData, signOpts)
+			if err != nil {
+				t.Fatalf("Signing failed: %v", err)
+			}
+
+			if len(signature) == 0 {
+				t.Error("Signature is empty")
+			}
+
+			// Verify the signature
+			verifyOpts := crypto.VerifyOptions{
+				Algorithm:     tt.algorithm,
+				PublicKeyFile: publicKeyPath,
+			}
+
+			err = crypto.VerifyData(testData, signature, verifyOpts)
+			if err != nil {
+				t.Errorf("Verification failed: %v", err)
+			}
+
+			// Test verification with wrong data (should fail)
+			wrongData := []byte("This is wrong data!")
+			err = crypto.VerifyData(wrongData, signature, verifyOpts)
+			if err == nil {
+				t.Error("Verification should have failed with wrong data")
+			}
+
+			// Test verification with wrong signature (should fail)
+			wrongSignature := make([]byte, len(signature))
+			copy(wrongSignature, signature)
+			wrongSignature[0] ^= 0xFF // Flip some bits
+			err = crypto.VerifyData(testData, wrongSignature, verifyOpts)
+			if err == nil {
+				t.Error("Verification should have failed with wrong signature")
+			}
+
+			t.Logf("Successfully signed and verified using %s", tt.algorithm)
+		})
+	}
+}
+
+// TestSignAndVerifyWithEncryptedKey tests signature with encrypted private key
+func TestSignAndVerifyWithEncryptedKey(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "encrypted_signature_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Generate an encrypted key pair
+	keyPairOpts := crypto.KeyPairOptions{
+		Type:          crypto.RSA,
+		ModulusLength: 2048,
+		Passphrase:    "testpassword123",
+		Format:        crypto.PEM,
+		AESKeySize:    256,
+	}
+
+	keyPair, err := crypto.GenerateKeyPair(keyPairOpts)
+	if err != nil {
+		t.Fatalf("Failed to generate key pair: %v", err)
+	}
+
+	// Save key pair to files
+	err = crypto.SaveKeyPairToFiles(keyPair, tempDir, crypto.PEM)
+	if err != nil {
+		t.Fatalf("Failed to save key pair: %v", err)
+	}
+
+	privateKeyPath := filepath.Join(tempDir, "private.pem")
+	publicKeyPath := filepath.Join(tempDir, "public.pem")
+
+	// Test data
+	testData := []byte("Test message with encrypted private key!")
+
+	// Sign with correct passphrase
+	signOpts := crypto.SignOptions{
+		Algorithm:      crypto.RSASHA256,
+		PrivateKeyFile: privateKeyPath,
+		Passphrase:     "testpassword123",
+	}
+
+	signature, err := crypto.SignData(testData, signOpts)
+	if err != nil {
+		t.Fatalf("Signing with correct passphrase failed: %v", err)
+	}
+
+	// Verify the signature
+	verifyOpts := crypto.VerifyOptions{
+		Algorithm:     crypto.RSASHA256,
+		PublicKeyFile: publicKeyPath,
+	}
+
+	err = crypto.VerifyData(testData, signature, verifyOpts)
+	if err != nil {
+		t.Errorf("Verification failed: %v", err)
+	}
+
+	// Test signing with wrong passphrase (should fail)
+	signOptsWrong := crypto.SignOptions{
+		Algorithm:      crypto.RSASHA256,
+		PrivateKeyFile: privateKeyPath,
+		Passphrase:     "wrongpassword",
+	}
+
+	_, err = crypto.SignData(testData, signOptsWrong)
+	if err == nil {
+		t.Error("Signing should have failed with wrong passphrase")
+	}
+
+	// Test signing without passphrase (should fail)
+	signOptsNoPass := crypto.SignOptions{
+		Algorithm:      crypto.RSASHA256,
+		PrivateKeyFile: privateKeyPath,
+		Passphrase:     "",
+	}
+
+	_, err = crypto.SignData(testData, signOptsNoPass)
+	if err == nil {
+		t.Error("Signing should have failed without passphrase")
+	}
+
+	t.Log("Successfully tested encrypted private key signing")
+}
+
+// TestSignFile tests signing files
+func TestSignFile(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "file_signature_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Generate a key pair
+	keyPairOpts := crypto.KeyPairOptions{
+		Type:          crypto.RSA,
+		ModulusLength: 2048,
+		Passphrase:    "",
+		Format:        crypto.PEM,
+		AESKeySize:    256,
+	}
+
+	keyPair, err := crypto.GenerateKeyPair(keyPairOpts)
+	if err != nil {
+		t.Fatalf("Failed to generate key pair: %v", err)
+	}
+
+	// Save key pair to files
+	err = crypto.SaveKeyPairToFiles(keyPair, tempDir, crypto.PEM)
+	if err != nil {
+		t.Fatalf("Failed to save key pair: %v", err)
+	}
+
+	// Create test file
+	testFile := filepath.Join(tempDir, "test.txt")
+	testData := "This is test file content for signature testing!"
+	err = os.WriteFile(testFile, []byte(testData), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	privateKeyPath := filepath.Join(tempDir, "private.pem")
+	publicKeyPath := filepath.Join(tempDir, "public.pem")
+
+	// Sign the file
+	signOpts := crypto.SignOptions{
+		Algorithm:      crypto.RSASHA256,
+		InputFile:      testFile,
+		PrivateKeyFile: privateKeyPath,
+		Passphrase:     "",
+	}
+
+	signature, err := crypto.SignFile(signOpts)
+	if err != nil {
+		t.Fatalf("File signing failed: %v", err)
+	}
+
+	// Verify the file signature
+	verifyOpts := crypto.VerifyOptions{
+		Algorithm:     crypto.RSASHA256,
+		InputFile:     testFile,
+		PublicKeyFile: publicKeyPath,
+	}
+
+	// Save signature to file and test file verification
+	signatureFile := filepath.Join(tempDir, "signature.bin")
+	err = os.WriteFile(signatureFile, signature, 0644)
+	if err != nil {
+		t.Fatalf("Failed to write signature file: %v", err)
+	}
+
+	verifyOpts.SignatureFile = signatureFile
+	err = crypto.VerifyFile(verifyOpts)
+	if err != nil {
+		t.Errorf("File verification failed: %v", err)
+	}
+
+	t.Log("Successfully signed and verified file")
+}
+
+// BenchmarkSignData benchmarks signing performance
+func BenchmarkSignData(b *testing.B) {
+	// Generate a key pair for benchmarking
+	keyPairOpts := crypto.KeyPairOptions{
+		Type:          crypto.RSA,
+		ModulusLength: 2048,
+		Passphrase:    "",
+		Format:        crypto.PEM,
+		AESKeySize:    256,
+	}
+
+	keyPair, err := crypto.GenerateKeyPair(keyPairOpts)
+	if err != nil {
+		b.Fatalf("Failed to generate key pair: %v", err)
+	}
+
+	// Create temporary files
+	tempDir, err := os.MkdirTemp("", "benchmark_signature")
+	if err != nil {
+		b.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	err = crypto.SaveKeyPairToFiles(keyPair, tempDir, crypto.PEM)
+	if err != nil {
+		b.Fatalf("Failed to save key pair: %v", err)
+	}
+
+	privateKeyPath := filepath.Join(tempDir, "private.pem")
+	testData := []byte("Benchmark test data for signature performance!")
+
+	signOpts := crypto.SignOptions{
+		Algorithm:      crypto.RSASHA256,
+		PrivateKeyFile: privateKeyPath,
+		Passphrase:     "",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := crypto.SignData(testData, signOpts)
+		if err != nil {
+			b.Fatalf("Signing failed: %v", err)
+		}
+	}
+}
