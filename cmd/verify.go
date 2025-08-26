@@ -53,8 +53,8 @@ func init() {
 	verifyCmd.Flags().StringVarP(&verifySignatureText, "signature-text", "t", "", "Signature as hex/base64 text (alternative to --signature)")
 	verifyCmd.Flags().StringVarP(&verifyEncoding, "encoding", "e", "base64", "Encoding of signature text (hex, base64)")
 
-	// Mark required flags
-	verifyCmd.MarkFlagRequired("public-key")
+	// Don't mark public-key as required here, we'll validate it manually
+	// verifyCmd.MarkFlagRequired("public-key")
 }
 
 func runVerify(cmd *cobra.Command, args []string) error {
@@ -129,6 +129,20 @@ func runVerify(cmd *cobra.Command, args []string) error {
 }
 
 func validateVerifyParams() error {
+	// Validate that public key is provided
+	if verifyPublicKey == "" {
+		return fmt.Errorf("required flag(s) \"public-key\" not set")
+	}
+
+	// Validate that either signature file or signature text is provided
+	if verifySignature == "" && verifySignatureText == "" {
+		return fmt.Errorf("either --signature or --signature-text must be provided")
+	}
+
+	if verifySignature != "" && verifySignatureText != "" {
+		return fmt.Errorf("cannot specify both --signature and --signature-text")
+	}
+
 	// Validate algorithm
 	validAlgorithms := []string{"RSA-SHA256", "RSA-SHA512", "RSA-PSS-SHA256", "RSA-PSS-SHA512"}
 	if !contains(validAlgorithms, verifyAlgorithm) {
@@ -145,15 +159,6 @@ func validateVerifyParams() error {
 		if _, err := os.Stat(verifyInput); os.IsNotExist(err) {
 			return fmt.Errorf("input file does not exist: %s", verifyInput)
 		}
-	}
-
-	// Validate that either signature file or signature text is provided
-	if verifySignature == "" && verifySignatureText == "" {
-		return fmt.Errorf("either --signature or --signature-text must be provided")
-	}
-
-	if verifySignature != "" && verifySignatureText != "" {
-		return fmt.Errorf("cannot specify both --signature and --signature-text")
 	}
 
 	// Validate signature file if specified

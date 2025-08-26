@@ -57,8 +57,8 @@ func init() {
 	signCmd.Flags().StringVarP(&signOutput, "output", "o", "", "Output file for signature (if not specified, prints to stdout)")
 	signCmd.Flags().StringVarP(&signEncoding, "encoding", "e", "base64", "Encoding for stdout output (hex, base64)")
 
-	// Mark required flags
-	signCmd.MarkFlagRequired("private-key")
+	// Don't mark private-key as required here, we'll validate it manually
+	// signCmd.MarkFlagRequired("private-key")
 }
 
 func runSign(cmd *cobra.Command, args []string) error {
@@ -99,22 +99,27 @@ func runSign(cmd *cobra.Command, args []string) error {
 }
 
 func validateSignParams() error {
+	// Validate that private key is provided
+	if signPrivateKey == "" {
+		return fmt.Errorf("required flag(s) \"private-key\" not set")
+	}
+
 	// Validate algorithm
 	validAlgorithms := []string{"RSA-SHA256", "RSA-SHA512", "RSA-PSS-SHA256", "RSA-PSS-SHA512"}
 	if !contains(validAlgorithms, signAlgorithm) {
 		return fmt.Errorf("invalid algorithm: %s (must be one of: %s)", signAlgorithm, strings.Join(validAlgorithms, ", "))
 	}
 
-	// Validate private key file exists
-	if _, err := os.Stat(signPrivateKey); os.IsNotExist(err) {
-		return fmt.Errorf("private key file does not exist: %s", signPrivateKey)
-	}
-
-	// Validate input file if specified
+	// Validate input file if specified (before validating private key file)
 	if signInput != "" {
 		if _, err := os.Stat(signInput); os.IsNotExist(err) {
 			return fmt.Errorf("input file does not exist: %s", signInput)
 		}
+	}
+
+	// Validate private key file exists
+	if _, err := os.Stat(signPrivateKey); os.IsNotExist(err) {
+		return fmt.Errorf("private key file does not exist: %s", signPrivateKey)
 	}
 
 	// Validate encoding for stdout output
