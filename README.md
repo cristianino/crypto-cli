@@ -349,6 +349,74 @@ This project has comprehensive test coverage including unit tests, integration t
 
 For detailed testing documentation, see [TESTING.md](TESTING.md).
 
+## Key Derivation Functions (KDF)
+
+Derive cryptographic keys from passwords using secure key derivation functions.
+
+### Supported Algorithms
+- **scrypt**: Memory-hard function, resistant to hardware brute-force attacks
+- **PBKDF2**: PKCS #5 PBKDF2 with SHA-1, SHA-256, or SHA-512
+
+### Basic Usage
+
+```bash
+# Derive key using scrypt (recommended)
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32
+
+# Derive key using PBKDF2-SHA256
+crypto-cli kdf --algorithm pbkdf2-sha256 --password mypassword --salt mysalt --keylen 32 --iterations 100000
+
+# Generate random salt automatically
+crypto-cli kdf --algorithm scrypt --password mypassword --generate-salt 16 --keylen 32
+
+# Output as hexadecimal
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --encoding hex
+```
+
+### Parameter Presets
+
+Use predefined parameter sets for different security/performance trade-offs:
+
+```bash
+# Fast: Lower security but faster computation
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --preset fast
+
+# Interactive: Moderate security for interactive logins
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --preset interactive
+
+# Sensitive: High security for sensitive data (default)
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --preset sensitive
+```
+
+### Custom Parameters
+
+Fine-tune scrypt parameters:
+
+```bash
+# Custom scrypt parameters
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 \
+  --scrypt-n 65536 --scrypt-r 8 --scrypt-p 1
+```
+
+Fine-tune PBKDF2 parameters:
+
+```bash
+# Custom PBKDF2 iterations
+crypto-cli kdf --algorithm pbkdf2-sha256 --password mypassword --salt mysalt --keylen 32 \
+  --iterations 500000
+```
+
+### Reading Password from stdin
+
+```bash
+# Read password securely from stdin
+echo "mypassword" | crypto-cli kdf --algorithm scrypt --password - --salt mysalt --keylen 32
+
+# Or interactively (password won't be displayed)
+crypto-cli kdf --algorithm scrypt --password - --salt mysalt --keylen 32
+# Enter password: [hidden input]
+```
+
 ## Contributing
 
 Pull requests are welcome! If you want to add new cryptographic commands, feel free to open an issue or PR.

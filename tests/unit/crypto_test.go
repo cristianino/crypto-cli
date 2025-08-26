@@ -1252,3 +1252,381 @@ func BenchmarkSignData(b *testing.B) {
 		}
 	}
 }
+
+// TestKDFScrypt tests scrypt key derivation
+func TestKDFScrypt(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    crypto.KDFOptions
+		wantErr bool
+	}{
+		{
+			name: "Scrypt-Default-Parameters",
+			opts: crypto.KDFOptions{
+				Algorithm: crypto.Scrypt,
+				Password:  "testpassword",
+				Salt:      "testsalt",
+				KeyLen:    32,
+				N:         32768,
+				R:         8,
+				P:         1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Scrypt-Custom-Parameters",
+			opts: crypto.KDFOptions{
+				Algorithm: crypto.Scrypt,
+				Password:  "testpassword",
+				Salt:      "testsalt",
+				KeyLen:    64,
+				N:         16384,
+				R:         8,
+				P:         1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Scrypt-Invalid-N",
+			opts: crypto.KDFOptions{
+				Algorithm: crypto.Scrypt,
+				Password:  "testpassword",
+				Salt:      "testsalt",
+				KeyLen:    32,
+				N:         12345, // Not a power of 2
+				R:         8,
+				P:         1,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Scrypt-Empty-Password",
+			opts: crypto.KDFOptions{
+				Algorithm: crypto.Scrypt,
+				Password:  "",
+				Salt:      "testsalt",
+				KeyLen:    32,
+				N:         16384,
+				R:         8,
+				P:         1,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			derivedKey, err := crypto.DeriveKey(tt.opts)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(derivedKey) != tt.opts.KeyLen {
+				t.Errorf("Expected key length %d, got %d", tt.opts.KeyLen, len(derivedKey))
+			}
+
+			// Test that same parameters produce same key
+			derivedKey2, err := crypto.DeriveKey(tt.opts)
+			if err != nil {
+				t.Errorf("Second derivation failed: %v", err)
+				return
+			}
+
+			if !bytes.Equal(derivedKey, derivedKey2) {
+				t.Error("Same parameters should produce same derived key")
+			}
+
+			// Test that different salt produces different key
+			optsWithDifferentSalt := tt.opts
+			optsWithDifferentSalt.Salt = "differentsalt"
+			derivedKey3, err := crypto.DeriveKey(optsWithDifferentSalt)
+			if err != nil {
+				t.Errorf("Third derivation failed: %v", err)
+				return
+			}
+
+			if bytes.Equal(derivedKey, derivedKey3) {
+				t.Error("Different salt should produce different derived key")
+			}
+
+			t.Logf("Successfully derived %d-byte key using scrypt", len(derivedKey))
+		})
+	}
+}
+
+// TestKDFPBKDF2 tests PBKDF2 key derivation
+func TestKDFPBKDF2(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    crypto.KDFOptions
+		wantErr bool
+	}{
+		{
+			name: "PBKDF2-SHA256-Default",
+			opts: crypto.KDFOptions{
+				Algorithm:  crypto.PBKDF2SHA256,
+				Password:   "testpassword",
+				Salt:       "testsalt",
+				KeyLen:     32,
+				Iterations: 100000,
+				HashFunc:   "sha256",
+			},
+			wantErr: false,
+		},
+		{
+			name: "PBKDF2-SHA512",
+			opts: crypto.KDFOptions{
+				Algorithm:  crypto.PBKDF2SHA512,
+				Password:   "testpassword",
+				Salt:       "testsalt",
+				KeyLen:     64,
+				Iterations: 50000,
+				HashFunc:   "sha512",
+			},
+			wantErr: false,
+		},
+		{
+			name: "PBKDF2-SHA1",
+			opts: crypto.KDFOptions{
+				Algorithm:  crypto.PBKDF2SHA1,
+				Password:   "testpassword",
+				Salt:       "testsalt",
+				KeyLen:     20,
+				Iterations: 10000,
+				HashFunc:   "sha1",
+			},
+			wantErr: false,
+		},
+		{
+			name: "PBKDF2-Empty-Salt",
+			opts: crypto.KDFOptions{
+				Algorithm:  crypto.PBKDF2SHA256,
+				Password:   "testpassword",
+				Salt:       "",
+				KeyLen:     32,
+				Iterations: 100000,
+				HashFunc:   "sha256",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			derivedKey, err := crypto.DeriveKey(tt.opts)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(derivedKey) != tt.opts.KeyLen {
+				t.Errorf("Expected key length %d, got %d", tt.opts.KeyLen, len(derivedKey))
+			}
+
+			// Test deterministic behavior
+			derivedKey2, err := crypto.DeriveKey(tt.opts)
+			if err != nil {
+				t.Errorf("Second derivation failed: %v", err)
+				return
+			}
+
+			if !bytes.Equal(derivedKey, derivedKey2) {
+				t.Error("Same parameters should produce same derived key")
+			}
+
+			t.Logf("Successfully derived %d-byte key using %s", len(derivedKey), tt.opts.Algorithm)
+		})
+	}
+}
+
+// TestGenerateRandomSalt tests random salt generation
+func TestGenerateRandomSalt(t *testing.T) {
+	tests := []struct {
+		name    string
+		length  int
+		wantErr bool
+	}{
+		{
+			name:    "Salt-16-bytes",
+			length:  16,
+			wantErr: false,
+		},
+		{
+			name:    "Salt-32-bytes",
+			length:  32,
+			wantErr: false,
+		},
+		{
+			name:    "Salt-Invalid-Length",
+			length:  0,
+			wantErr: true,
+		},
+		{
+			name:    "Salt-Negative-Length",
+			length:  -1,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			salt, err := crypto.GenerateRandomSalt(tt.length)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(salt) != tt.length {
+				t.Errorf("Expected salt length %d, got %d", tt.length, len(salt))
+			}
+
+			// Test that multiple generations produce different salts
+			salt2, err := crypto.GenerateRandomSalt(tt.length)
+			if err != nil {
+				t.Errorf("Second salt generation failed: %v", err)
+				return
+			}
+
+			if bytes.Equal(salt, salt2) {
+				t.Error("Random salt generation should produce different salts")
+			}
+
+			t.Logf("Successfully generated %d-byte random salt", len(salt))
+		})
+	}
+}
+
+// TestScryptParameterValidation tests scrypt parameter validation
+func TestScryptParameterValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		N, r, p int
+		wantErr bool
+	}{
+		{
+			name:    "Valid-Parameters",
+			N:       32768,
+			r:       8,
+			p:       1,
+			wantErr: false,
+		},
+		{
+			name:    "Invalid-N-Not-Power-Of-2",
+			N:       12345,
+			r:       8,
+			p:       1,
+			wantErr: true,
+		},
+		{
+			name:    "Invalid-N-Zero",
+			N:       0,
+			r:       8,
+			p:       1,
+			wantErr: true,
+		},
+		{
+			name:    "Invalid-r-Zero",
+			N:       16384,
+			r:       0,
+			p:       1,
+			wantErr: true,
+		},
+		{
+			name:    "Invalid-p-Zero",
+			N:       16384,
+			r:       8,
+			p:       0,
+			wantErr: true,
+		},
+		{
+			name:    "Memory-Limit-Exceeded",
+			N:       1048576, // Very high N
+			r:       128,     // Very high r
+			p:       1,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := crypto.ValidateScryptParameters(tt.N, tt.r, tt.p)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+// BenchmarkKDFScrypt benchmarks scrypt performance
+func BenchmarkKDFScrypt(b *testing.B) {
+	opts := crypto.KDFOptions{
+		Algorithm: crypto.Scrypt,
+		Password:  "benchmarkpassword",
+		Salt:      "benchmarksalt",
+		KeyLen:    32,
+		N:         16384, // Lower N for faster benchmark
+		R:         8,
+		P:         1,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := crypto.DeriveKey(opts)
+		if err != nil {
+			b.Fatalf("Scrypt derivation failed: %v", err)
+		}
+	}
+}
+
+// BenchmarkKDFPBKDF2 benchmarks PBKDF2 performance
+func BenchmarkKDFPBKDF2(b *testing.B) {
+	opts := crypto.KDFOptions{
+		Algorithm:  crypto.PBKDF2SHA256,
+		Password:   "benchmarkpassword",
+		Salt:       "benchmarksalt",
+		KeyLen:     32,
+		Iterations: 10000, // Lower iterations for faster benchmark
+		HashFunc:   "sha256",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := crypto.DeriveKey(opts)
+		if err != nil {
+			b.Fatalf("PBKDF2 derivation failed: %v", err)
+		}
+	}
+}

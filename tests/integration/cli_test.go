@@ -814,3 +814,76 @@ func TestCLIDiffieHellmanErrors(t *testing.T) {
 		})
 	}
 }
+
+
+// TestKDFCommand tests the kdf command functionality
+func TestKDFCommand(t *testing.T) {
+binPath := getBinaryPath(t)
+
+// Test basic scrypt functionality
+cmd := exec.Command(binPath, "kdf", "--algorithm", "scrypt", "--password", "testpassword", "--salt", "testsalt123456", "--keylen", "32")
+output, err := cmd.CombinedOutput()
+if err != nil {
+t.Fatalf("KDF scrypt command failed: %v, output: %s", err, string(output))
+}
+
+outputStr := string(output)
+if !strings.Contains(outputStr, "Algorithm: scrypt") {
+t.Errorf("Expected scrypt algorithm in output, got: %s", outputStr)
+}
+if !strings.Contains(outputStr, "Derived key (base64):") {
+t.Errorf("Expected derived key in output, got: %s", outputStr)
+}
+
+// Test PBKDF2
+cmd = exec.Command(binPath, "kdf", "--algorithm", "pbkdf2-sha256", "--password", "testpassword", "--salt", "testsalt123456", "--keylen", "32", "--encoding", "hex")
+output, err = cmd.CombinedOutput()
+if err != nil {
+t.Fatalf("KDF PBKDF2 command failed: %v, output: %s", err, string(output))
+}
+
+outputStr = string(output)
+if !strings.Contains(outputStr, "Algorithm: pbkdf2-sha256") {
+t.Errorf("Expected pbkdf2-sha256 algorithm in output, got: %s", outputStr)
+}
+if !strings.Contains(outputStr, "Derived key (hex):") {
+t.Errorf("Expected derived key in hex output, got: %s", outputStr)
+}
+
+// Test invalid algorithm
+cmd = exec.Command(binPath, "kdf", "--algorithm", "invalid", "--password", "testpassword", "--salt", "testsalt123456", "--keylen", "32")
+output, err = cmd.CombinedOutput()
+if err == nil {
+t.Errorf("Expected command to fail with invalid algorithm, but it succeeded with output: %s", string(output))
+}
+
+t.Logf("KDF tests passed successfully")
+}
+
+// TestKDFHelpCommand tests the kdf help command
+func TestKDFHelpCommand(t *testing.T) {
+binPath := getBinaryPath(t)
+
+cmd := exec.Command(binPath, "kdf", "--help")
+output, err := cmd.CombinedOutput()
+if err != nil {
+t.Fatalf("kdf help command failed: %v", err)
+}
+
+outputStr := string(output)
+expectedStrings := []string{
+"--algorithm",
+"--password",
+"--salt",
+"--keylen",
+"scrypt",
+"pbkdf2-sha256",
+"pbkdf2-sha512",
+}
+
+for _, expected := range expectedStrings {
+if !strings.Contains(outputStr, expected) {
+t.Errorf("Help output should contain '%s'\nActual output: %s", expected, outputStr)
+}
+}
+}
