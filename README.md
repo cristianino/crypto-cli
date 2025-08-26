@@ -10,7 +10,7 @@ This project is a Golang reimplementation of [curso-criptografia](https://github
 - **✅ Hashing**: SHA-1, SHA-2, SHA-3
 - **✅ HMAC**: keyed message authentication codes
 - **✅ Diffie-Hellman**: key exchange
-- **Key pairs**: generation and serialization *(planned)*
+- **✅ Key pairs**: RSA and RSA-PSS key pair generation and serialization
 - **Digital signatures**: sign and verify *(planned)*
 - **Key derivation**: KDFs like scrypt and PBKDF2 *(planned)*
 
@@ -26,6 +26,7 @@ crypto-cli/
 │   ├── decipher.go     # "decipher" command (decrypt)
 │   ├── hmac.go         # "hmac" command
 │   ├── dh.go           # "dh" command (Diffie-Hellman)
+│   ├── keypair.go      # "keypair" command (RSA key pairs)
 │   └── ...             # other commands (signatures, etc.)
 ├── internal/           # Internal packages (not exported outside the module)
 │   └── crypto/         # Cryptographic implementations
@@ -34,6 +35,7 @@ crypto-cli/
 │       ├── cipher.go   # AES encryption/decryption logic
 │       ├── hmac.go     # HMAC logic
 │       ├── dh.go       # Diffie-Hellman logic
+│       ├── keypair.go  # RSA key pair generation logic
 │       └── ...         
 ├── tests/              # Test suite (see TESTING.md)
 │   ├── unit/           # Unit tests
@@ -251,6 +253,33 @@ crypto-cli decipher -p mypassword -s mysalt -z 128 -i encrypted_image.bin -o ima
 
 # Supported key sizes: 128, 192, 256 bits
 # Uses AES encryption in CBC mode with scrypt key derivation
+```
+
+Generate RSA key pairs:
+
+```bash
+# Generate RSA-2048 key pair in PEM format
+crypto-cli keypair --type rsa --modulus 2048 --format pem --output ./keys
+
+# Generate RSA-4096 key pair with passphrase protection
+crypto-cli keypair --type rsa --modulus 4096 --passphrase secret123 --aes-size 256 --output ./keys
+
+# Generate RSA-PSS key pair with 3072-bit modulus
+crypto-cli keypair --type rsa-pss --modulus 3072 --format pem --output ./keys
+
+# Generate key pair and display as base64 (no files saved)
+crypto-cli keypair --type rsa --modulus 2048 --encoding base64
+
+# Generate key pair in DER format (binary format)
+crypto-cli keypair --type rsa --modulus 2048 --format der --output ./keys
+
+# Using shorter flags
+crypto-cli keypair -t rsa -m 4096 -f pem -p mypassword -a 256 -o ./keys
+
+# Supported key types: rsa, rsa-pss
+# Supported modulus lengths: 2048, 3072, 4096 bits
+# Supported formats: pem, der
+# Supported AES sizes for encryption: 128, 192, 256 bits
 ```
 
 ## Testing

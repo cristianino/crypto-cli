@@ -749,3 +749,204 @@ func BenchmarkComputeDiffieHellmanSecret(b *testing.B) {
 		}
 	}
 }
+
+// TestGenerateKeyPair tests RSA key pair generation
+func TestGenerateKeyPair(t *testing.T) {
+	tests := []struct {
+		name       string
+		opts       crypto.KeyPairOptions
+		shouldFail bool
+	}{
+		{
+			name: "RSA-2048-PEM-NoPassphrase",
+			opts: crypto.KeyPairOptions{
+				Type:          crypto.RSA,
+				ModulusLength: 2048,
+				Passphrase:    "",
+				Format:        crypto.PEM,
+				AESKeySize:    256,
+			},
+			shouldFail: false,
+		},
+		{
+			name: "RSA-3072-PEM-WithPassphrase",
+			opts: crypto.KeyPairOptions{
+				Type:          crypto.RSA,
+				ModulusLength: 3072,
+				Passphrase:    "secret123",
+				Format:        crypto.PEM,
+				AESKeySize:    256,
+			},
+			shouldFail: false,
+		},
+		{
+			name: "RSA-4096-DER-NoPassphrase",
+			opts: crypto.KeyPairOptions{
+				Type:          crypto.RSA,
+				ModulusLength: 4096,
+				Passphrase:    "",
+				Format:        crypto.DER,
+				AESKeySize:    128,
+			},
+			shouldFail: false,
+		},
+		{
+			name: "RSA-PSS-2048-PEM-WithPassphrase",
+			opts: crypto.KeyPairOptions{
+				Type:          crypto.RSAPSS,
+				ModulusLength: 2048,
+				Passphrase:    "mypassword",
+				Format:        crypto.PEM,
+				AESKeySize:    192,
+			},
+			shouldFail: false,
+		},
+		{
+			name: "Invalid-ModulusLength",
+			opts: crypto.KeyPairOptions{
+				Type:          crypto.RSA,
+				ModulusLength: 1024, // Invalid
+				Passphrase:    "",
+				Format:        crypto.PEM,
+				AESKeySize:    256,
+			},
+			shouldFail: true,
+		},
+		{
+			name: "Invalid-AESKeySize",
+			opts: crypto.KeyPairOptions{
+				Type:          crypto.RSA,
+				ModulusLength: 2048,
+				Passphrase:    "secret",
+				Format:        crypto.PEM,
+				AESKeySize:    512, // Invalid
+			},
+			shouldFail: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			keyPair, err := crypto.GenerateKeyPair(tt.opts)
+
+			if tt.shouldFail {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if keyPair == nil {
+				t.Fatal("Key pair is nil")
+			}
+
+			if len(keyPair.PublicKey) == 0 {
+				t.Error("Public key is empty")
+			}
+
+			if len(keyPair.PrivateKey) == 0 {
+				t.Error("Private key is empty")
+			}
+
+			// Verify format-specific properties
+			if tt.opts.Format == crypto.PEM {
+				// PEM keys should start with -----BEGIN
+				if !bytes.HasPrefix(keyPair.PublicKey, []byte("-----BEGIN PUBLIC KEY-----")) {
+					t.Error("Public key doesn't start with PEM header")
+				}
+				if !bytes.HasPrefix(keyPair.PrivateKey, []byte("-----BEGIN")) {
+					t.Error("Private key doesn't start with PEM header")
+				}
+			}
+
+			t.Logf("Generated %s key pair with %d-bit modulus in %s format",
+				tt.opts.Type, tt.opts.ModulusLength, tt.opts.Format)
+		})
+	}
+}
+
+// TestSaveKeyPairToFiles tests saving key pairs to files
+func TestSaveKeyPairToFiles(t *testing.T) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "keypair_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Generate a key pair
+	opts := crypto.KeyPairOptions{
+		Type:          crypto.RSA,
+		ModulusLength: 2048,
+		Passphrase:    "testpass",
+		Format:        crypto.PEM,
+		AESKeySize:    256,
+	}
+
+	keyPair, err := crypto.GenerateKeyPair(opts)
+	if err != nil {
+		t.Fatalf("Failed to generate key pair: %v", err)
+	}
+
+	// Test saving to files
+	err = crypto.SaveKeyPairToFiles(keyPair, tempDir, crypto.PEM)
+	if err != nil {
+		t.Fatalf("Failed to save key pair: %v", err)
+	}
+
+	// Verify files exist
+	publicKeyPath := filepath.Join(tempDir, "public.pem")
+	privateKeyPath := filepath.Join(tempDir, "private.pem")
+
+	if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
+		t.Error("Public key file was not created")
+	}
+
+	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
+		t.Error("Private key file was not created")
+	}
+
+	// Verify file contents match
+	publicKeyData, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		t.Fatalf("Failed to read public key file: %v", err)
+	}
+
+	privateKeyData, err := os.ReadFile(privateKeyPath)
+	if err != nil {
+		t.Fatalf("Failed to read private key file: %v", err)
+	}
+
+	if !bytes.Equal(keyPair.PublicKey, publicKeyData) {
+		t.Error("Public key file content doesn't match generated key")
+	}
+
+	if !bytes.Equal(keyPair.PrivateKey, privateKeyData) {
+		t.Error("Private key file content doesn't match generated key")
+	}
+
+	t.Logf("Successfully saved key pair to %s", tempDir)
+}
+
+// BenchmarkGenerateKeyPair benchmarks key pair generation
+func BenchmarkGenerateKeyPair(b *testing.B) {
+	opts := crypto.KeyPairOptions{
+		Type:          crypto.RSA,
+		ModulusLength: 2048,
+		Passphrase:    "",
+		Format:        crypto.PEM,
+		AESKeySize:    256,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := crypto.GenerateKeyPair(opts)
+		if err != nil {
+			b.Fatalf("Key generation failed: %v", err)
+		}
+	}
+}
