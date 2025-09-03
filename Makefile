@@ -44,11 +44,15 @@ clean:
 	@echo "Cleaning..."
 	$(GOCLEAN)
 	@rm -rf $(BIN_DIR) $(DIST_DIR)
+	@rm -f $(APP_NAME) $(APP_NAME).exe
 	@echo "✅ Clean completed"
 
 # Run tests
-test:
+test: build
 	@echo "Running tests..."
+	@echo "Building binary for integration tests..."
+	@cp $(BIN_DIR)/$(APP_NAME) $(APP_NAME)
+	@chmod +x $(APP_NAME)
 	$(GOTEST) -v ./...
 	@chmod +x tests/run_tests.sh
 	@./tests/run_tests.sh
