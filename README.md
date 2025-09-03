@@ -55,7 +55,75 @@ crypto-cli/
 
 ## Installation
 
-### Basic Installation (Local Build)
+### Quick Installation (Precompiled Binaries) - Recommended
+
+Download the latest precompiled binaries from the [Releases](https://github.com/cristianino/crypto-cli/releases) page:
+
+#### Linux (x64)
+```bash
+# Download and extract
+wget https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-linux-amd64.tar.gz
+tar -xzf crypto-cli-v1.0.0-linux-amd64.tar.gz
+
+# Install globally
+sudo mv crypto-cli-v1.0.0-linux-amd64 /usr/local/bin/crypto-cli
+crypto-cli --help
+```
+
+#### Linux (ARM64)
+```bash
+# Download and extract
+wget https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-linux-arm64.tar.gz
+tar -xzf crypto-cli-v1.0.0-linux-arm64.tar.gz
+
+# Install globally
+sudo mv crypto-cli-v1.0.0-linux-arm64 /usr/local/bin/crypto-cli
+crypto-cli --help
+```
+
+#### macOS (Intel)
+```bash
+# Download and extract
+curl -L -o crypto-cli-v1.0.0-darwin-amd64.tar.gz https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-darwin-amd64.tar.gz
+tar -xzf crypto-cli-v1.0.0-darwin-amd64.tar.gz
+
+# Install globally
+sudo mv crypto-cli-v1.0.0-darwin-amd64 /usr/local/bin/crypto-cli
+crypto-cli --help
+```
+
+#### macOS (Apple Silicon)
+```bash
+# Download and extract
+curl -L -o crypto-cli-v1.0.0-darwin-arm64.tar.gz https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-darwin-arm64.tar.gz
+tar -xzf crypto-cli-v1.0.0-darwin-arm64.tar.gz
+
+# Install globally
+sudo mv crypto-cli-v1.0.0-darwin-arm64 /usr/local/bin/crypto-cli
+crypto-cli --help
+```
+
+#### Windows
+1. Download `crypto-cli-v1.0.0-windows-amd64.zip` from [Releases](https://github.com/cristianino/crypto-cli/releases)
+2. Extract the ZIP file
+3. Add the extracted directory to your PATH or move `crypto-cli.exe` to a directory that's already in your PATH
+4. Open Command Prompt or PowerShell and run `crypto-cli --help`
+
+#### Verify Installation
+All releases include SHA256 checksums for verification:
+```bash
+# Download checksums file
+wget https://github.com/cristianino/crypto-cli/releases/latest/download/checksums.txt
+
+# Verify your downloaded file (example for Linux x64)
+sha256sum -c checksums.txt --ignore-missing
+```
+
+### Build from Source (Advanced)
+
+If you prefer to build from source or need to modify the code:
+
+#### Basic Installation (Local Build)
 
 ```bash
 # Clone the repository
