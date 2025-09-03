@@ -14,6 +14,128 @@ This project is a Golang reimplementation of [curso-criptografia](https://github
 - **✅ Digital signatures**: RSA sign and verify with SHA-256/SHA-512
 - **✅ Key derivation**: KDFs like scrypt and PBKDF2
 
+---
+
+## 📦 Quick Download & Install
+
+> **🚀 Ready to use! No compilation needed.**
+
+### Choose your platform:
+
+<table>
+<tr>
+<td align="center">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" width="48" height="48"><br>
+<strong>Linux x64</strong><br>
+<a href="https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.1-linux-amd64.tar.gz">
+📥 Download
+</a>
+</td>
+<td align="center">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" width="48" height="48"><br>
+<strong>Linux ARM64</strong><br>
+<a href="https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.1-linux-arm64.tar.gz">
+📥 Download
+</a>
+</td>
+<td align="center">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apple/apple-original.svg" width="48" height="48"><br>
+<strong>macOS Intel</strong><br>
+<a href="https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.1-darwin-amd64.tar.gz">
+📥 Download
+</a>
+</td>
+<td align="center">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/apple/apple-original.svg" width="48" height="48"><br>
+<strong>macOS Apple Silicon</strong><br>
+<a href="https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.1-darwin-arm64.tar.gz">
+📥 Download
+</a>
+</td>
+<td align="center">
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/windows8/windows8-original.svg" width="48" height="48"><br>
+<strong>Windows x64</strong><br>
+<a href="https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.1-windows-amd64.zip">
+📥 Download
+</a>
+</td>
+</tr>
+</table>
+
+### 🔧 Installation Steps:
+
+#### 🐧 **Linux / macOS:**
+```bash
+# 1. Download and extract (replace URL with your platform)
+wget https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.1-linux-amd64.tar.gz
+tar -xzf crypto-cli-v1.0.1-linux-amd64.tar.gz
+
+# 2. Install system-wide (optional)
+sudo mv crypto-cli-v1.0.1-linux-amd64 /usr/local/bin/crypto-cli
+
+# 3. Test installation
+crypto-cli --help
+```
+
+#### 🪟 **Windows:**
+1. **Download** the `.zip` file for Windows
+2. **Extract** the archive 
+3. **Add to PATH** or move `crypto-cli.exe` to a directory in your PATH
+4. **Test** by opening Command Prompt and running `crypto-cli --help`
+
+### ✅ **Verify Download (Optional)**
+```bash
+# Download checksums
+wget https://github.com/cristianino/crypto-cli/releases/latest/download/checksums.txt
+
+# Verify integrity
+sha256sum -c checksums.txt --ignore-missing
+```
+
+---
+
+## 🚀 Quick Start Examples
+
+Get started immediately with these common tasks:
+
+### 🎲 Generate Random Data
+```bash
+# Random bytes in base64
+crypto-cli prng --type bytes --size 32 --encoding base64
+
+# Random UUID
+crypto-cli prng --type uuid
+```
+
+### 🔐 Encrypt Files
+```bash
+# Encrypt a file
+crypto-cli cipher --password mypassword --input secret.txt --output encrypted.bin
+
+# Decrypt it back
+crypto-cli decipher --password mypassword --input encrypted.bin --output decrypted.txt
+```
+
+### 🏷️ Hash Data
+```bash
+# Hash a file with SHA-256
+crypto-cli hash --algorithm sha256 --file document.txt
+
+# Hash from stdin
+echo "Hello World" | crypto-cli hash --algorithm sha256
+```
+
+### 🔑 Generate Key Pairs
+```bash
+# Generate RSA key pair
+crypto-cli keypair --algorithm rsa --size 2048 --format pem
+
+# Generate with password protection
+crypto-cli keypair --algorithm rsa --size 2048 --format pem --passphrase mypassword
+```
+
+> 💡 **Tip:** Run `crypto-cli --help` or `crypto-cli <command> --help` to see all available options!
+
 ## Project Structure
 
 ```bash
@@ -53,80 +175,90 @@ crypto-cli/
 └── TESTING.md          # Testing documentation
 ````
 
-## Installation
+---
 
-### Quick Installation (Precompiled Binaries) - Recommended
+## 📚 Advanced Usage & Examples
 
-Download the latest precompiled binaries from the [Releases](https://github.com/cristianino/crypto-cli/releases) page:
-
-#### Linux (x64)
+### 🔐 **Encryption & Decryption**
 ```bash
-# Download and extract
-wget https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-linux-amd64.tar.gz
-tar -xzf crypto-cli-v1.0.0-linux-amd64.tar.gz
+# Encrypt a file with AES-256
+crypto-cli cipher --password mypassword --input secret.txt --output encrypted.bin
 
-# Install globally
-sudo mv crypto-cli-v1.0.0-linux-amd64 /usr/local/bin/crypto-cli
-crypto-cli --help
+# Decrypt the file back
+crypto-cli decipher --password mypassword --input encrypted.bin --output decrypted.txt
+
+# Using different key sizes (128, 192, 256)
+crypto-cli cipher --password mypassword --key-size 256 --input data.txt --output data.enc
 ```
 
-#### Linux (ARM64)
+### 🏷️ **Hashing**
 ```bash
-# Download and extract
-wget https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-linux-arm64.tar.gz
-tar -xzf crypto-cli-v1.0.0-linux-arm64.tar.gz
+# SHA-256 hash of a file
+crypto-cli hash --algorithm sha256 --file document.txt
 
-# Install globally
-sudo mv crypto-cli-v1.0.0-linux-arm64 /usr/local/bin/crypto-cli
-crypto-cli --help
+# Hash from stdin with different encodings
+echo "Hello World" | crypto-cli hash --algorithm sha512 --encoding base64
+
+# Supported: sha1, sha256, sha512, sha3-256, sha3-512
+crypto-cli hash --algorithm sha3-256 --file data.txt --encoding hex
 ```
 
-#### macOS (Intel)
+### 🔑 **HMAC (Message Authentication)**
 ```bash
-# Download and extract
-curl -L -o crypto-cli-v1.0.0-darwin-amd64.tar.gz https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-darwin-amd64.tar.gz
-tar -xzf crypto-cli-v1.0.0-darwin-amd64.tar.gz
+# Generate HMAC for file integrity
+crypto-cli hmac --algorithm sha256 --key secretkey --file document.txt
 
-# Install globally
-sudo mv crypto-cli-v1.0.0-darwin-amd64 /usr/local/bin/crypto-cli
-crypto-cli --help
+# HMAC from stdin
+echo "message" | crypto-cli hmac -a sha256 -k mykey -e base64
 ```
 
-#### macOS (Apple Silicon)
+### 🤝 **Diffie-Hellman Key Exchange**
 ```bash
-# Download and extract
-curl -L -o crypto-cli-v1.0.0-darwin-arm64.tar.gz https://github.com/cristianino/crypto-cli/releases/latest/download/crypto-cli-v1.0.0-darwin-arm64.tar.gz
-tar -xzf crypto-cli-v1.0.0-darwin-arm64.tar.gz
+# Generate DH parameters and keys
+crypto-cli dh --mode generate --encoding hex
 
-# Install globally
-sudo mv crypto-cli-v1.0.0-darwin-arm64 /usr/local/bin/crypto-cli
-crypto-cli --help
+# Compute shared secret
+crypto-cli dh --mode compute --prime <P> --generator <G> --private-key <priv> --public-key <pub>
 ```
 
-#### Windows
-1. Download `crypto-cli-v1.0.0-windows-amd64.zip` from [Releases](https://github.com/cristianino/crypto-cli/releases)
-2. Extract the ZIP file
-3. Add the extracted directory to your PATH or move `crypto-cli.exe` to a directory that's already in your PATH
-4. Open Command Prompt or PowerShell and run `crypto-cli --help`
-
-#### Verify Installation
-All releases include SHA256 checksums for verification:
+### 🗝️ **RSA Key Pair Generation**
 ```bash
-# Download checksums file
-wget https://github.com/cristianino/crypto-cli/releases/latest/download/checksums.txt
+# Generate 2048-bit RSA key pair
+crypto-cli keypair --algorithm rsa --size 2048 --format pem
 
-# Verify your downloaded file (example for Linux x64)
-sha256sum -c checksums.txt --ignore-missing
+# Generate with password protection
+crypto-cli keypair --algorithm rsa --size 4096 --format pem --passphrase mypassword
+
+# Save to files
+crypto-cli keypair --algorithm rsa --size 2048 --private-key-file private.pem --public-key-file public.pem
 ```
 
-### Build from Source (Advanced)
+### ✍️ **Digital Signatures**
+```bash
+# Sign a document
+crypto-cli sign --algorithm rsa --hash-algorithm sha256 --private-key private.pem --input document.txt
 
-If you prefer to build from source or need to modify the code:
+# Verify signature
+crypto-cli verify --algorithm rsa --hash-algorithm sha256 --public-key public.pem --signature signature.txt --input document.txt
+```
 
-#### Basic Installation (Local Build)
+### 🔗 **Key Derivation Functions (KDF)**
+```bash
+# Generate key from password using scrypt
+crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --key-length 32
+
+# Using PBKDF2
+crypto-cli kdf --algorithm pbkdf2 --hash sha256 --password mypassword --salt mysalt --iterations 10000
+```
+
+---
+
+## 🛠️ Build from Source
+
+For developers who want to modify or contribute:
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/cristianino/crypto-cli.git
 cd crypto-cli
 
@@ -134,361 +266,72 @@ cd crypto-cli
 go mod tidy
 
 # Build
-go build -o crypto-cli
+make build
 
-# Run
-./crypto-cli --help
+# Run tests
+make test
+
+# Build for all platforms
+make build-all
 ```
 
-### Install as System Command (Linux)
+---
 
-To use `crypto-cli` as a global command from anywhere in your system:
+## 📖 Command Reference
 
-#### Option 1: Install to `/usr/local/bin` (Recommended)
+Run `crypto-cli --help` to see all available commands:
 
-```bash
-# Clone and build
-git clone https://github.com/cristianino/crypto-cli.git
-cd crypto-cli
-go mod tidy
-go build -o crypto-cli
+- `prng` - Generate pseudo-random values (bytes, integers, UUIDs)
+- `hash` - Generate hashes using various algorithms  
+- `cipher` - Encrypt files with AES
+- `decipher` - Decrypt files encrypted with AES
+- `hmac` - Generate HMAC for message authentication
+- `dh` - Diffie-Hellman key exchange operations
+- `keypair` - Generate RSA key pairs
+- `sign` - Create digital signatures
+- `verify` - Verify digital signatures
+- `kdf` - Key derivation functions (scrypt, PBKDF2)
 
-# Install globally (requires sudo)
-sudo cp crypto-cli /usr/local/bin/
+> 💡 **Tip:** Use `crypto-cli <command> --help` for detailed options on each command.
 
-# Verify installation
-crypto-cli --help
-```
+---
 
-#### Option 2: Install to `~/.local/bin` (User-only)
+## 🎯 Educational Purpose
 
-```bash
-# Create local bin directory if it doesn't exist
-mkdir -p ~/.local/bin
+This tool is designed for **learning cryptography**. Each command demonstrates real-world cryptographic concepts:
 
-# Clone and build
-git clone https://github.com/cristianino/crypto-cli.git
-cd crypto-cli
-go mod tidy
-go build -o crypto-cli
+- **Understand** how different algorithms work
+- **Practice** with safe, well-tested implementations
+- **Experiment** with parameters and see results
+- **Learn** best practices in cryptographic operations
 
-# Install for current user
-cp crypto-cli ~/.local/bin/
+---
 
-# Add to PATH if not already (add to ~/.bashrc or ~/.zshrc)
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+## 🛡️ Security Notes
 
-# Verify installation
-crypto-cli --help
-```
+- Uses industry-standard algorithms (AES-256, RSA-2048+, SHA-256+)
+- Secure random number generation with `crypto/rand`
+- Proper key derivation with scrypt/PBKDF2
+- No hardcoded secrets or backdoors
 
-#### Option 3: Direct Go Installation
+---
 
-```bash
-# Install directly using go install
-go install github.com/cristianino/crypto-cli@latest
-
-# Verify installation (assuming $GOPATH/bin is in your PATH)
-crypto-cli --help
-```
-
-#### Uninstall
-
-```bash
-# If installed to /usr/local/bin
-sudo rm /usr/local/bin/crypto-cli
-
-# If installed to ~/.local/bin
-rm ~/.local/bin/crypto-cli
-
-# If installed with go install
-rm $(go env GOPATH)/bin/crypto-cli
-```
-
-## Example Usage
-
-> **Note**: The examples below assume you have installed `crypto-cli` as a system command. If you're running it locally, use `./crypto-cli` instead of `crypto-cli`.
-
-Generate 16 random bytes encoded in base64:
-
-```bash
-crypto-cli prng --type bytes --size 16 --encoding base64
-```
-
-Generate a random UUID:
-
-```bash
-crypto-cli prng --type uuid
-```
-
-Generate a random INT:
-```bash
-# Use size in bits (example: 8 bytes = 64 bits)
-crypto-cli prng --type int --size 8
-
-# Number between 1 and 6
-crypto-cli prng --type int --min 1 --max 6
-
-# Number between 1000 and 9999
-crypto-cli prng --type int --min 1000 --max 9999
-
-# Number between 0 and 100 (default if you only use --type int)
-crypto-cli prng --type int
-```
-
-Generate hash of a file:
-
-```bash
-# Generate SHA256 hash of a file in hexadecimal format
-crypto-cli hash --algorithm sha256 --encoding hex --file example.txt
-
-# Generate SHA512 hash of a file in base64 format
-crypto-cli hash --algorithm sha512 --encoding base64 --file example.txt
-
-# Generate SHA1 hash (hexadecimal is default encoding)
-crypto-cli hash --algorithm sha1 --file example.txt
-
-# Hash from stdin
-cat file.txt | crypto-cli hash --algorithm sha256
-
-# Supported algorithms: sha256, sha512, sha1
-# Supported encodings: hex, base64
-```
-
-Generate HMAC for message authentication:
-
-```bash
-# Generate HMAC-SHA256 of a file with a secret key
-crypto-cli hmac --algorithm sha256 --key mysecret --encoding hex --file example.txt
-
-# Generate HMAC-SHA512 with base64 encoding
-crypto-cli hmac --algorithm sha512 --key mysecret --encoding base64 --file example.txt
-
-# Generate HMAC-SHA256 (hex is default encoding)
-crypto-cli hmac --algorithm sha256 --key mysecret --file example.txt
-
-# Generate HMAC from stdin
-cat file.txt | crypto-cli hmac --algorithm sha256 --key mysecret
-
-# Using shorter flags
-crypto-cli hmac -a sha512 -k mysecret -e base64 -f data.txt
-
-# Supported algorithms: sha256, sha512, sha1, sha3-256, sha3-512
-# Supported encodings: hex, base64
-```
-
-Diffie-Hellman key exchange:
-
-```bash
-# Generate new key pair
-crypto-cli dh --mode generate --encoding hex
-
-# Generate key pair with base64 encoding and save to file
-crypto-cli dh --mode generate --encoding base64 --output alice_keys.json
-
-# Compute shared secret (Alice computes secret using Bob's public key)
-crypto-cli dh --mode compute \
-  --prime <prime-from-keygen> --prime-encoding hex \
-  --generator <generator-from-keygen> --generator-encoding hex \
-  --private-key <alice-private-key> --private-key-encoding hex \
-  --other-public-key <bob-public-key> --other-public-key-encoding hex \
-  --encoding hex
-
-# Using shorter flags
-crypto-cli dh -m compute \
-  --prime <prime> \
-  --generator <generator> \
-  --private-key <your-private-key> \
-  --other-public-key <their-public-key> \
-  -e base64
-
-# Both parties should get the same shared secret!
-# Supported encodings: hex, base64
-```
-
-Encrypt and decrypt files:
-
-```bash
-# Encrypt a file with AES-256-CBC
-crypto-cli cipher --password mypassword --salt mysalt --size 256 --input data.txt --output encrypted.bin
-
-# Encrypt with shorter flags (AES-128-CBC)
-crypto-cli cipher -p mypassword -s mysalt -z 128 -i image.png -o encrypted_image.bin
-
-# Decrypt the file
-crypto-cli decipher --password mypassword --salt mysalt --size 256 --input encrypted.bin --output decrypted.txt
-
-# Decrypt with shorter flags
-crypto-cli decipher -p mypassword -s mysalt -z 128 -i encrypted_image.bin -o image.png
-
-# Supported key sizes: 128, 192, 256 bits
-# Uses AES encryption in CBC mode with scrypt key derivation
-```
-
-Generate RSA key pairs:
-
-```bash
-# Generate RSA-2048 key pair in PEM format
-crypto-cli keypair --type rsa --modulus 2048 --format pem --output ./keys
-
-# Generate RSA-4096 key pair with passphrase protection
-crypto-cli keypair --type rsa --modulus 4096 --passphrase secret123 --aes-size 256 --output ./keys
-
-# Generate RSA-PSS key pair with 3072-bit modulus
-crypto-cli keypair --type rsa-pss --modulus 3072 --format pem --output ./keys
-
-# Generate key pair and display as base64 (no files saved)
-crypto-cli keypair --type rsa --modulus 2048 --encoding base64
-
-# Generate key pair in DER format (binary format)
-crypto-cli keypair --type rsa --modulus 2048 --format der --output ./keys
-
-# Using shorter flags
-crypto-cli keypair -t rsa -m 4096 -f pem -p mypassword -a 256 -o ./keys
-
-# Supported key types: rsa, rsa-pss
-# Supported modulus lengths: 2048, 3072, 4096 bits
-# Supported formats: pem, der
-# Supported AES sizes for encryption: 128, 192, 256 bits
-```
-
-Create and verify digital signatures:
-
-```bash
-# Sign a file with RSA-SHA256
-crypto-cli sign --algorithm RSA-SHA256 --input document.txt --private-key private.pem --output signature.bin
-
-# Sign with passphrase-protected private key
-crypto-cli sign --algorithm RSA-SHA256 --input document.txt --private-key private.pem --passphrase secret123 --output signature.bin
-
-# Sign and output as base64 to stdout
-crypto-cli sign --algorithm RSA-SHA256 --input document.txt --private-key private.pem --encoding base64
-
-# Sign using RSA-PSS with SHA-512
-crypto-cli sign --algorithm RSA-PSS-SHA512 --input document.txt --private-key private.pem --output signature.bin
-
-# Sign from stdin
-cat document.txt | crypto-cli sign --algorithm RSA-SHA256 --private-key private.pem --encoding hex
-
-# Verify a signature
-crypto-cli verify --algorithm RSA-SHA256 --input document.txt --public-key public.pem --signature signature.bin
-
-# Verify with base64 signature text
-crypto-cli verify --algorithm RSA-SHA256 --input document.txt --public-key public.pem --signature-text <base64-signature> --encoding base64
-
-# Verify from stdin
-cat document.txt | crypto-cli verify --algorithm RSA-SHA256 --public-key public.pem --signature signature.bin
-
-# Using shorter flags
-crypto-cli sign -a RSA-SHA256 -i document.txt -k private.pem -o signature.bin
-crypto-cli verify -a RSA-SHA256 -i document.txt -k public.pem -s signature.bin
-
-# Supported algorithms: RSA-SHA256, RSA-SHA512, RSA-PSS-SHA256, RSA-PSS-SHA512
-# Supported encodings: hex, base64
-```
-
-## Testing
-
-This project has comprehensive test coverage including unit tests, integration tests, and benchmarks.
-
-### Quick Testing
-
-```bash
-# Run all tests
-./tests/run_tests.sh all
-
-# Run only unit tests (fast)
-./tests/run_tests.sh unit
-
-# Run with coverage report
-./tests/run_tests.sh coverage
-
-# Run benchmarks
-./tests/run_tests.sh benchmarks
-```
-
-### Test Structure
-
-- **Unit Tests**: Fast tests for core cryptographic functions
-- **Integration Tests**: End-to-end CLI testing
-- **Test Data**: Shared test files for consistency
-- **Coverage**: 55.3% code coverage with HTML reports
-
-For detailed testing documentation, see [TESTING.md](TESTING.md).
-
-## Key Derivation Functions (KDF)
-
-Derive cryptographic keys from passwords using secure key derivation functions.
-
-### Supported Algorithms
-- **scrypt**: Memory-hard function, resistant to hardware brute-force attacks
-- **PBKDF2**: PKCS #5 PBKDF2 with SHA-1, SHA-256, or SHA-512
-
-### Basic Usage
-
-```bash
-# Derive key using scrypt (recommended)
-crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32
-
-# Derive key using PBKDF2-SHA256
-crypto-cli kdf --algorithm pbkdf2-sha256 --password mypassword --salt mysalt --keylen 32 --iterations 100000
-
-# Generate random salt automatically
-crypto-cli kdf --algorithm scrypt --password mypassword --generate-salt 16 --keylen 32
-
-# Output as hexadecimal
-crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --encoding hex
-```
-
-### Parameter Presets
-
-Use predefined parameter sets for different security/performance trade-offs:
-
-```bash
-# Fast: Lower security but faster computation
-crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --preset fast
-
-# Interactive: Moderate security for interactive logins
-crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --preset interactive
-
-# Sensitive: High security for sensitive data (default)
-crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 --preset sensitive
-```
-
-### Custom Parameters
-
-Fine-tune scrypt parameters:
-
-```bash
-# Custom scrypt parameters
-crypto-cli kdf --algorithm scrypt --password mypassword --salt mysalt --keylen 32 \
-  --scrypt-n 65536 --scrypt-r 8 --scrypt-p 1
-```
-
-Fine-tune PBKDF2 parameters:
-
-```bash
-# Custom PBKDF2 iterations
-crypto-cli kdf --algorithm pbkdf2-sha256 --password mypassword --salt mysalt --keylen 32 \
-  --iterations 500000
-```
-
-### Reading Password from stdin
-
-```bash
-# Read password securely from stdin
-echo "mypassword" | crypto-cli kdf --algorithm scrypt --password - --salt mysalt --keylen 32
-
-# Or interactively (password won't be displayed)
-crypto-cli kdf --algorithm scrypt --password - --salt mysalt --keylen 32
-# Enter password: [hidden input]
-```
-
-## Contributing
-
-Pull requests are welcome! If you want to add new cryptographic commands, feel free to open an issue or PR.
-
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+---
+
+<div align="center">
+
+**⭐ If you find this tool useful, please give it a star on GitHub! ⭐**
+
+[Report Bug](https://github.com/cristianino/crypto-cli/issues) • [Request Feature](https://github.com/cristianino/crypto-cli/issues) • [Documentation](https://github.com/cristianino/crypto-cli)
+
+</div>
